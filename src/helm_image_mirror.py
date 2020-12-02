@@ -593,9 +593,11 @@ def format_failures(failures):
         mapping failure type and failed items
     :type failures: Dict
     """
+    failures_copy = dict(failures)
     for msg, items in failures.items():
-        if items:
-            pprint.pprint(msg, items)
+        if not items:
+            del failures_copy[msg]
+    pprint.pprint(failures_copy)
 
 
 def main(file):
