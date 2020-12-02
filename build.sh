@@ -8,7 +8,8 @@ function build() {
 }
 
 function run() {
-    docker run -it --rm -v $PWD:/workdir $IMAGE
+    DOCKER_SOCK=/var/run/docker.sock
+    docker run -it --rm -v $DOCKER_SOCK:$DOCKER_SOCK -v $PWD:/workdir $IMAGE
 }
 
 $1
