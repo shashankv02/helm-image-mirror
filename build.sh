@@ -4,7 +4,7 @@ VERSION=`git describe --tags --always`
 IMAGE=helm-images:$VERSION
 
 function build() {
-    docker build -t $IMAGE
+    docker build -t $IMAGE .
 }
 
 function run() {
