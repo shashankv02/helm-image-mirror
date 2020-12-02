@@ -500,7 +500,7 @@ def get_all_images(charts):
 def get_error_type(key, value, obj):
     if key not in obj:
         return Errors.missing_required_key(key)
-    return Errors.invalid_value(value, key)
+    return Errors.invalid_value(key, value)
 
 
 def get_registries(registries, g_push, g_retain, parents=[]):
