@@ -33,15 +33,19 @@ charts:
     # (optional) overrides global fetch setting
     # from remote repository
     fetch: true
+    values:
+      # (optional) values to be passed to `--set` flag
+      set:
+      # (optional) values to be passed to `--set-string` flag
+      set_str:
     versions:
       - version: 3.0.0
-        # (optional) override chart specific fetch setting
+        # (optional) override fetch setting for version
         fetch: true
         # (optional) local_dir specifies the local directory in which the
-        # chart .tgz exists if fetch is set to false
+        # chart tgz exists if fetch is set to false
         local_dir:
-        # (optional) values to be passed to chart before rendering the templates
-        # can be used for charts that have mandatorily required values
+        # (optional) override values for version
         values:
           # (optional) values to be passed to `--set` flag
           set:

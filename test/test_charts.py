@@ -18,10 +18,16 @@ charts:
   - fetch: true
     repo: stable
     name: redis
+    values:
+      set: abc.xyz=1
+      set_str: pqr.xyz=true
     versions:
     - fetch: true
       local_dir: tc1
       version: 1.0.0
+      values:
+        set: abc.xyz=2
+        set_str: qwe.rty=false
     - fetch: false
       local_dir: tc2
       version: 2.0.0
@@ -58,10 +64,11 @@ charts:
 def test_get_charts(global_fetch_policy):
     charts_config = yaml.safe_load(config)["charts"]
     charts = get_charts(charts_config, global_fetch_policy)
+    group1_values = {"set": "abc.xyz=1", "set_str": "pqr.xyz=true"}
     expected = [
-        Chart("stable", "redis", "1.0.0", "tc1", True),
-        Chart("stable", "redis", "2.0.0", "tc2", False),
-        Chart("stable", "redis", "3.0.0", "tc3", True),
+        Chart("stable", "redis", "1.0.0", "tc1", True, {"set": "abc.xyz=2", "set_str": "qwe.rty=false"}),
+        Chart("stable", "redis", "2.0.0", "tc2", False, group1_values),
+        Chart("stable", "redis", "3.0.0", "tc3", True, group1_values),
         Chart("prod", "mongo", "4.0.0", "tc4", True),
         Chart("prod", "mongo", "5.0.0", "tc5", False),
         Chart("prod", "mongo", "6.0.0", "/tmp/prod/mongo/2", False),

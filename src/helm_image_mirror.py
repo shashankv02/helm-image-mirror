@@ -409,6 +409,7 @@ def get_charts(charts, global_fetch_policy):
     chart_objs = []
     for chart_i, chart in enumerate(charts):
         chart_fetch_policy = chart.get(FETCH_KEY, global_fetch_policy)
+        chart_values = chart.get(VALUES_KEY, {})
         chart_name = chart.get(NAME_KEY)
         repo_name = chart.get(REPO_KEY)
         if not chart_name:
@@ -429,7 +430,7 @@ def get_charts(charts, global_fetch_policy):
             local_dir = version.get(FETCH_DIR_KEY) or "/tmp/{}/{}/{}".format(
                 repo_name, chart_name, version_i
             )
-            values = version.get(VALUES_KEY, {})
+            version_values = version.get(VALUES_KEY, chart_values)
             chart_objs.append(
                 Chart(
                     repo_name=repo_name,
@@ -437,7 +438,7 @@ def get_charts(charts, global_fetch_policy):
                     version=version_str,
                     local_dir=local_dir,
                     fetch_policy=version_fetch_policy,
-                    values=values,
+                    values=version_values,
                 )
             )
     return chart_objs
