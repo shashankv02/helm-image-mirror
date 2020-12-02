@@ -65,7 +65,7 @@ def get_images(obj):
         if key == "image" and isinstance(value, str):
             images.add(value)
         if isinstance(value, dict):
-            images.add(get_images(value))
+            images.update(get_images(value))
     return images
 
 
@@ -75,7 +75,7 @@ def parse_images(manifests):
     docs = yaml.safe_load_all(manifests)
     images = set()
     for doc in docs:
-        images.add(get_images(doc))
+        images.update(get_images(doc))
     return images
 
 
