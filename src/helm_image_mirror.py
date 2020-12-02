@@ -592,7 +592,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", required=True, help="configuration file path")
     parser.add_argument("-d", "--debug", action="store_true", help="print debug logs")
+    args = parser.parse_args()
     if args.debug:
         DEBUG = True
-    args = parser.parse_args()
     sys.exit(main(args.config))
