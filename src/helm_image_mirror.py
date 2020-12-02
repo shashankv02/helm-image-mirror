@@ -18,7 +18,7 @@ import pprint
 import yaml
 
 # Constants
-DEBUG = True
+DEBUG = False
 REPOS_KEY = "repos"
 REPO_KEY = "repo"
 REPOS_ADD_KEY = "add"
