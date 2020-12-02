@@ -108,6 +108,37 @@ class Registry:
         return not self.__eq__(other)
 
 
+class Repo:
+    def __init__(self, name, remote, username, password):
+        self.name = name
+        self.remote = remote
+        self.username = username
+        self.password = password
+
+    def get_add_cmd(self, mask_pw=False):
+        add_cmd = "repo add {name} {remote}".format(name=self.name, remote=self.remote)
+        if self.username and self.password:
+            password = self.password
+            if mask_pw:
+                password = "<snipped>"
+            credential_flags_template = "{} --username {} --password {}"
+            add_cmd_with_credentials = credential_flags_template.format(add_cmd, self.username, password)
+            return add_cmd_with_credentials
+        return add_cmd
+
+    def add(self):
+        cmd = self.get_add_cmd()
+        masked_cmd = self.get_add_cmd(mask_pw=True)
+        print(masked_cmd)
+        helm(cmd, print_cmd=False)
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
 def load_config(file):
     """Loads given config file
     into memory
@@ -268,20 +299,9 @@ def get_repo_username_password(repo, g_username, g_password):
     return username, password
 
 
-def configure_repos(repos, parents):
-    """Configures helm repositories
-
-    :param repos: repos configuration
-    :type repos: Dict
-    :param parents: list of parent keys in the configuration
-        to be used for constructing appropriate error messages
-        for configuration errors
-    :type parents: [str]
-    """
-    print("Configuring repositories")
-    g_username, g_password = repos[USERNAME_KEY], repos[PASSWORD_KEY]
-    parents += REPOS_ADD_KEY
-    for i, repo in enumerate(repos[REPOS_ADD_KEY]):
+def get_repo_objs(repos, g_username, g_password, parents=[]):
+    repo_objs = []
+    for i, repo in enumerate(repos):
         is_err = False
         name = repo.get(NAME_KEY)
         if not name:
@@ -294,16 +314,31 @@ def configure_repos(repos, parents):
         if is_err:
             continue
         username, password = get_repo_username_password(repo, g_username, g_password)
-        base_cmd = "repo add {name} {remote}".format(name=name, remote=remote)
-        if username and password:
-            cmd_template = "{} --username {} --password {}"
-            cmd = cmd_template.format(base_cmd, username, password)
-            masked_cmd = cmd_template.format(base_cmd, username, "<snipped>")
-            print("helm " + masked_cmd)
-            helm(cmd, print_cmd=False)
-        else:
-            helm(base_cmd)
-    print("Finished configuring repositories")
+        repo_objs.append(
+            Repo(
+                name=name,
+                remote=remote,
+                username=username,
+                password=password,
+            )
+        )
+    return repo_objs
+
+
+def get_repos(repos, parents):
+    """Configures helm repositories
+
+    :param repos: repos configuration
+    :type repos: Dict
+    :param parents: list of parent keys in the configuration
+        to be used for constructing appropriate error messages
+        for configuration errors
+    :type parents: [str]
+    """
+    g_username, g_password = repos[USERNAME_KEY], repos[PASSWORD_KEY]
+    parents += REPOS_ADD_KEY
+    repos_to_add = repos.get(REPOS_ADD_KEY, [])
+    return get_repo_objs(repos_to_add, g_username, g_password, parents=parents)
 
 
 def get_charts(charts, global_fetch_policy):
@@ -411,6 +446,13 @@ def push_images_to_registries(images, registries):
         registry.tag_and_push(images)
 
 
+def configure_repos(repos, update=True):
+    for repo in repos:
+        repo.add()
+    if update:
+        helm("repo update")
+
+
 def main(file):
     """Main function
 
@@ -425,11 +467,9 @@ def main(file):
     run_init_scripts(init_scripts)
 
     # Configure repos
-    repos = config[REPOS_KEY]
-    configure_repos(repos, parents=[REPOS_KEY])
-
-    # Update repos
-    helm("repo update")
+    repos_config = config[REPOS_KEY]
+    repos = get_repos(repos_config, parents=[REPOS_KEY])
+    configure_repos(repos)
 
     # fetch charts
     charts = config.get(CHARTS_KEY)
