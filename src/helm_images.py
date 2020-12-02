@@ -49,6 +49,64 @@ class Errors:
         return "invalid value {} for key {}".format(value, key)
 
 
+class Chart:
+    def __init__(self, repo_name, chart_name, version, local_dir, fetch_policy):
+        self.repo_name = repo_name
+        self.chart_name = chart_name
+        self.version = version
+        self.local_dir = local_dir
+        self.fetch_policy = fetch_policy
+
+    def fetch(self):
+        if self.fetch_policy:
+            helm(
+                "fetch --untar --untardir {}  --version {} {}/{}".format(
+                    self.local_dir, self.version, self.repo_name, self.chart_name
+                )
+            )
+
+    def template(self):
+        return helm("template {}/{}".format(self.local_dir, self.chart_name))
+
+
+    def images(self):
+        return parse_images(self.template())
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+
+class Registry:
+    def __init__(self, name, push, retain):
+        self.name = name
+        self.push = push
+        self.retain = retain
+
+    def tag_and_push(self, images):
+        if not self.push:
+            print(
+                "Not pushing images to registry",
+                self.name,
+                "as push is set to false",
+            )
+        for image in images:
+            image_name = image.split("/")[-1]
+            target_name = "{}/{}".format(self.name, image_name)
+            docker("tag {} {}".format(image, target_name))
+            docker("push {}".format(target_name))
+            if not self.retain:
+                docker("rmi {}".format(target_name))
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 def load_config(file):
     """Loads given config file
@@ -248,36 +306,6 @@ def configure_repos(repos, parents):
     print("Finished configuring repositories")
 
 
-class Chart:
-    def __init__(self, repo_name, chart_name, version, local_dir, fetch_policy):
-        self.repo_name = repo_name
-        self.chart_name = chart_name
-        self.version = version
-        self.local_dir = local_dir
-        self.fetch_policy = fetch_policy
-
-    def fetch(self):
-        if self.fetch_policy:
-            helm(
-                "fetch --untar --untardir {}  --version {} {}/{}".format(
-                    self.local_dir, self.version, self.repo_name, self.chart_name
-                )
-            )
-
-    def template(self):
-        return helm("template {}/{}".format(self.local_dir, self.chart_name))
-
-
-    def images(self):
-        return parse_images(self.template())
-
-    def __eq__(self, other):
-        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-
 def get_charts(charts, global_fetch_policy):
     """Get all Chart objects loaded from charts configuration
 
@@ -336,13 +364,14 @@ def get_all_images(charts):
         images.update(chart.images())
     return images
 
+
 def get_error_type(key, value, obj):
     if key not in obj:
         return Errors.missing_required_key(key)
     return Errors.invalid_value(value, key)
 
 
-def push_images(images, registries, g_push, g_retain, parents):
+def get_registries(registries, g_push, g_retain, parents=[]):
     """Pushes given images to given registries
 
     :param images: list of images
@@ -358,6 +387,7 @@ def push_images(images, registries, g_push, g_retain, parents):
         for configuration errors
     :type parents: [str]
     """
+    registry_objs = []
     for i, registry in enumerate(registries):
         registry_name = registry.get(NAME_KEY)
         if not registry_name:
@@ -366,21 +396,19 @@ def push_images(images, registries, g_push, g_retain, parents):
             continue
         push = registry.get(PUSH_KEY, g_push)
         retain = registry.get(RETAIN_KEY, g_retain)
-        if not push:
-            print(
-                "Not pushing images to registry",
-                registry_name,
-                "as push field is set to false",
+        registry_objs.append(
+            Registry(
+                name=registry_name,
+                push=push,
+                retain=retain,
             )
-            continue
-        for image in images:
-            image_name = image.split("/")[-1]
-            target_name = "{}/{}".format(registry_name, image_name)
-            docker("pull {}".format(image))
-            docker("tag {} {}".format(image, target_name))
-            docker("push {}".format(target_name))
-            if not retain:
-                docker("rmi {}".format(target_name))
+        )
+    return registry_objs
+
+
+def push_images_to_registries(images, registries):
+    for registry in registries:
+        registry.tag_and_push(images)
 
 
 def main(file):
@@ -420,9 +448,10 @@ def main(file):
     registries = config.get(REGISTRIES_KEY)
     g_retain = config.get(RETAIN_KEY, False)
     g_push = config.get(PUSH_KEY, True)
-    push_images(
-        images, registries, g_retain=g_retain, g_push=g_push, parents=[REGISTRIES_KEY]
+    registries = get_registries(
+        registries, g_retain=g_retain, g_push=g_push, parents=[REGISTRIES_KEY]
     )
+    push_images_to_registries(images, registries)
 
 
 if __name__ == "__main__":
