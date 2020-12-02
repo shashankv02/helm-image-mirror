@@ -38,8 +38,8 @@ RETAIN_KEY = "retain"
 
 
 class Errors:
-    """Standard errors
-    """
+    """Standard errors"""
+
     @staticmethod
     def missing_required_key(key):
         return "missing required key " + key
@@ -50,6 +50,8 @@ class Errors:
 
 
 class Chart:
+    """Helm chart configuration"""
+
     def __init__(self, repo_name, chart_name, version, local_dir, fetch_policy):
         self.repo_name = repo_name
         self.chart_name = chart_name
@@ -68,7 +70,6 @@ class Chart:
     def template(self):
         return helm("template {}/{}".format(self.local_dir, self.chart_name))
 
-
     def images(self):
         return parse_images(self.template())
 
@@ -79,8 +80,9 @@ class Chart:
         return not self.__eq__(other)
 
 
-
 class Registry:
+    """Docker registry configuration"""
+
     def __init__(self, name, push, retain):
         self.name = name
         self.push = push
@@ -109,6 +111,8 @@ class Registry:
 
 
 class Repo:
+    """Helm repository configuration"""
+
     def __init__(self, name, remote, username, password):
         self.name = name
         self.remote = remote
@@ -122,7 +126,9 @@ class Repo:
             if mask_pw:
                 password = "<snipped>"
             credential_flags_template = "{} --username {} --password {}"
-            add_cmd_with_credentials = credential_flags_template.format(add_cmd, self.username, password)
+            add_cmd_with_credentials = credential_flags_template.format(
+                add_cmd, self.username, password
+            )
             return add_cmd_with_credentials
         return add_cmd
 
@@ -213,6 +219,7 @@ def parse_images(documents):
     :return: list of images
     :rtype: [str]
     """
+
     def get_images(obj):
         images = set()
         if not isinstance(obj, dict):
@@ -300,6 +307,22 @@ def get_repo_username_password(repo, g_username, g_password):
 
 
 def get_repo_objs(repos, g_username, g_password, parents=[]):
+    """Return Repo class instances instantiated from given
+    repos configuration
+
+    :param repos: List of helm repository configurations
+    :type repos: [Dict]
+    :param g_username: global username
+    :type g_username: str
+    :param g_password: global password
+    :type g_password: str
+    :param parents: list of parent keys in the configuration
+        to be used for constructing appropriate error messages
+        for configuration errors, defaults to []
+    :type parents: list, optional
+    :return: list of Repo objects
+    :rtype: [Repo]
+    """
     repo_objs = []
     for i, repo in enumerate(repos):
         is_err = False
@@ -373,7 +396,9 @@ def get_charts(charts, global_fetch_policy):
                 err = get_error_type(VERION_KEY, version_str, version)
                 error(err, parents=[CHARTS_KEY, VERSIONS_KEY], index=version_i)
                 continue
-            local_dir = version.get(FETCH_DIR_KEY) or "/tmp/{}/{}/{}".format(repo_name, chart_name, version_i)
+            local_dir = version.get(FETCH_DIR_KEY) or "/tmp/{}/{}/{}".format(
+                repo_name, chart_name, version_i
+            )
             chart_objs.append(
                 Chart(
                     repo_name=repo_name,
@@ -407,12 +432,11 @@ def get_error_type(key, value, obj):
 
 
 def get_registries(registries, g_push, g_retain, parents=[]):
-    """Pushes given images to given registries
+    """Get Registry objects instantiated from given registries
+    configuration
 
-    :param images: list of images
-    :type images: [str]
-    :param registries: list of destination registries
-    :type registries: [str]
+    :param registries: list of destination registry configurations
+    :type registries: [Dict]
     :param g_push: global push policy
     :type g_push: bool
     :param g_retain: global retain policy
@@ -421,6 +445,8 @@ def get_registries(registries, g_push, g_retain, parents=[]):
         to be used for constructing appropriate error messages
         for configuration errors
     :type parents: [str]
+    :return: list of Registry objects
+    :rtype: [Registry]
     """
     registry_objs = []
     for i, registry in enumerate(registries):
@@ -442,11 +468,26 @@ def get_registries(registries, g_push, g_retain, parents=[]):
 
 
 def push_images_to_registries(images, registries):
+    """Pushes all given images to given registries
+
+    :param images: list of images
+    :type images: [str]
+    :param registries: list of Regitries
+    :type registries: [Registry]
+    """
     for registry in registries:
         registry.tag_and_push(images)
 
 
 def configure_repos(repos, update=True):
+    """Configures given helm repositories
+
+    :param repos: list of Repos
+    :type repos: [Repo]
+    :param update: `helm repo update` is run if True,
+        defaults to True
+    :type update: bool, optional
+    """
     for repo in repos:
         repo.add()
     if update:

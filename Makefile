@@ -3,3 +3,6 @@ build:
 
 run:
 	bash -ex ./build.sh run
+
+test:
+	pytest
