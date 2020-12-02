@@ -75,12 +75,20 @@ def run(file):
 
     # fetch charts
     images = set()
-    for chart in charts:
+    for chart_i, chart in enumerate(charts):
         chart_fetch_policy = chart.get("fetch", None)
-        for version in chart["versions"]:
+        chart_name = chart.get("name")
+        if not chart_name:
+            print("No chart name specified for chart at index", chart_i)
+            continue
+        for version_i, version in enumerate(chart["versions"]):
             version_fetch_policy = version.get("fetch", None)
+            version_str = version.get("version")
+            if not version_str:
+                print("No version string specified for chart", chart_name, "at index", version_i)
+                continue
             if get_fetch_policy(global_fetch_policy, chart_fetch_policy, version_fetch_policy):
-                helm('fetch --untar --untardir .  --version {} {}'.format(version, chart))
+                helm('fetch --untar --untardir .  --version {} {}'.format(version_str, chart_name))
             manifests = helm('template ./config-manager')
             images.add(parse_images(manifests))
     print(images)
