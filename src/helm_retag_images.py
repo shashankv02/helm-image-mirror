@@ -212,7 +212,7 @@ def run(file):
             if get_fetch_policy(global_fetch_policy, chart_fetch_policy, version_fetch_policy):
                 helm('fetch --untar --untardir {}  --version {} {}/{}'.format(local_dir, version_str, repo_name, chart_name))
             manifests = helm('template {}/{}'.format(local_dir, chart_name))
-            images.add(parse_images(manifests))
+            images.update(parse_images(manifests))
     print(images)
 
 run('sample.yaml')
