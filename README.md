@@ -109,7 +109,7 @@ $ mv helm_image_mirror.sh /usr/local/bin/helm_image_mirror
 
 ### Step 1:
 
-Create the configuration file. See [sample.yaml](sample-config.yaml)
+Create the configuration file. See [sample-config.yaml](sample-config.yaml)
 
 ### Step 2:
 
