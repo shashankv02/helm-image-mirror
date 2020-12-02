@@ -133,6 +133,7 @@ class Registry:
         tag_failures = set()
         push_failures = set()
         cleanup_failures = set()
+        succeeded = set()
         for image in images:
             image_name = image.split("/")[-1]
             target_name = "{}/{}".format(self.name, image_name)
@@ -145,12 +146,13 @@ class Registry:
                 docker("push {}".format(target_name))
             except subprocess.CalledProcessError:
                 push_failures.add(target_name)
+            succeeded.add(image)
             if not self.retain:
                 try:
                     docker("rmi {}".format(target_name))
                 except subprocess.CalledProcessError:
                     cleanup_failures.add(target_name)
-        return tag_failures, push_failures, cleanup_failures
+        return succeeded, tag_failures, push_failures, cleanup_failures
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
@@ -557,18 +559,19 @@ def push_images_to_registries(images, registries):
     :type images: [str]
     :param registries: list of Regitries
     :type registries: [Registry]
-    :return: tag failures, push failures and cleanup failures
-    :rtype: (set((str, str)), set(str), set(str))
+    :return: dictionary containing success and failures information
+    :rtype: Dict
     """
-    tag_failures = set()
-    push_failures = set()
-    cleanup_failures = set()
+    failures = {}
     for registry in registries:
-        tf, pf, cf = registry.tag_and_push(images)
-        tag_failures.update(tf)
-        push_failures.update(pf)
-        cleanup_failures.update(cf)
-    return tag_failures, push_failures, cleanup_failures
+        pushed, tf, pf, cf = registry.tag_and_push(images)
+        failures[registry] = {
+            "Pushed": pushed,
+            "Failed to tag": tf,
+            "Failed to push": pf,
+            "Failed to cleanup": cf,
+        }
+    return failures
 
 
 def configure_repos(repos, update=True):
@@ -586,7 +589,7 @@ def configure_repos(repos, update=True):
         helm("repo update")
 
 
-def format_failures(failures):
+def print_dict(failures):
     """Prints failres if any
 
     :param failures: Dictionary of failures
@@ -641,17 +644,15 @@ def main(file):
         registries, g_retain=g_retain, g_push=g_push, parents=[REGISTRIES_KEY]
     )
     failed_to_pull = pull_images(images)
-    tag_failures, push_failures, cleanup_failures = push_images_to_registries(
-        images, registries
-    )
-    format_failures(
+    pulled_images = images - failed_to_pull
+    failures = push_images_to_registries(pulled_images, registries)
+    print_dict(
         {
+            "All images": images,
             "Failed to pull": failed_to_pull,
-            "Failed to tag": tag_failures,
-            "Failed to push": push_failures,
-            "Failed to cleanup": cleanup_failures,
         }
     )
+    print_dict(failures)
 
 
 if __name__ == "__main__":
