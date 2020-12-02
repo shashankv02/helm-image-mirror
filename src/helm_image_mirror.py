@@ -142,8 +142,7 @@ class Repo:
     def add(self):
         cmd = self.get_add_cmd(mask_pw=False)
         masked_cmd = self.get_add_cmd(mask_pw=True)
-        print(masked_cmd)
-        print(cmd)
+        print("helm " + masked_cmd)
         helm(cmd, print_cmd=False)
 
     def __eq__(self, other):
