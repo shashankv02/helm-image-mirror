@@ -105,7 +105,10 @@ class Chart:
     def images(self):
         print("Finding images in chart", self.combined_name)
         images = parse_images(self.template())
-        pprint.pprint("Found images:", list(images))
+        if not images:
+            print("No images found")
+        else:
+            print("Found images:", images)
         return images
 
     def __eq__(self, other):
