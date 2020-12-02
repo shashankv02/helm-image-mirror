@@ -248,8 +248,32 @@ def configure_repos(repos, parents):
     print("Finished configuring repositories")
 
 
-def get_all_images(charts, global_fetch_policy):
-    """Get all images in given charts
+class Chart:
+    def __init__(self, repo_name, chart_name, version, local_dir, fetch_policy):
+        self.repo_name = repo_name
+        self.chart_name = chart_name
+        self.version = version
+        self.local_dir = local_dir
+        self.fetch_policy = fetch_policy
+
+    def fetch(self):
+        if self.fetch_policy:
+            helm(
+                "fetch --untar --untardir {}  --version {} {}/{}".format(
+                    self.local_dir, self.version, self.repo_name, self.chart_name
+                )
+            )
+
+    def template(self):
+        return helm("template {}/{}".format(self.local_dir, self.chart_name))
+
+
+    def images(self):
+        return parse_images(self.template())
+
+
+def get_charts(charts, global_fetch_policy):
+    """Get all Chart objects loaded from charts configuration
 
     :param charts: charts section in configuration
     :type charts: Dict
@@ -257,10 +281,10 @@ def get_all_images(charts, global_fetch_policy):
         to be used if the chart local fetch policy
         is not specified
     :type global_fetch_policy: bool
-    :return: list of images
-    :rtype: [str]
+    :return: list of Charts
+    :rtype: [Chart]
     """
-    images = set()
+    charts = []
     for chart_i, chart in enumerate(charts):
         chart_fetch_policy = chart.get(FETCH_KEY, global_fetch_policy)
         chart_name = chart.get(NAME_KEY)
@@ -281,16 +305,30 @@ def get_all_images(charts, global_fetch_policy):
                 error(err, parents=[CHARTS_KEY, VERSIONS_KEY], index=version_i)
                 continue
             local_dir = version.get(FETCH_DIR_KEY) or "/tmp/{}".format(version_i)
-            if version_fetch_policy:
-                helm(
-                    "fetch --untar --untardir {}  --version {} {}/{}".format(
-                        local_dir, version_str, repo_name, chart_name
-                    )
+            charts.append(
+                Chart(
+                    repo_name=repo_name,
+                    chart_name=chart_name,
+                    version=version_str,
+                    local_dir=local_dir,
+                    fetch_policy=version_fetch_policy,
                 )
-            manifests = helm("template {}/{}".format(local_dir, chart_name))
-            images.update(parse_images(manifests))
-    return images
+            )
+    return charts
 
+
+def get_all_images(charts):
+    """Get all images from the charts
+
+    :param charts: List of Chart objects
+    :type charts: [Chart]
+    :return: list of images
+    :rtype: [str]
+    """
+    images = set()
+    for chart in charts:
+        images.update(chart.images())
+    return images
 
 def get_error_type(key, value, obj):
     if key not in obj:
@@ -365,7 +403,8 @@ def main(file):
         print("No charts specified in config")
         return
     global_fetch_policy = config.get(FETCH_KEY, True)
-    images = get_all_images(charts, global_fetch_policy=global_fetch_policy)
+    charts = get_charts(charts, global_fetch_policy=global_fetch_policy)
+    images = get_all_images(charts)
 
     print("Found images")
     pprint.pprint(images)
