@@ -23,7 +23,7 @@ def helm(command):
     try:
         return execute("helm " + command)
     except subprocess.CalledProcessError as e:
-        print(e)
+        print(e.stdout)
         raise
 
 
