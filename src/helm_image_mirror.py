@@ -186,7 +186,7 @@ class Repo:
     def add(self):
         cmd = self.get_add_cmd(mask_pw=False)
         masked_cmd = self.get_add_cmd(mask_pw=True)
-        print("helm " + masked_cmd)
+        debug("helm " + masked_cmd)
         helm(cmd, print_cmd=False)
 
     def __eq__(self, other):
@@ -233,7 +233,7 @@ def execute(command, print_cmd=True):
     :raises: subprocess.CalledProcessError
     """
     if print_cmd:
-        print(command)
+        debug(command)
     cmd = shlex.split(command)
     return subprocess.run(cmd, check=True, capture_output=True).stdout
 
@@ -584,8 +584,10 @@ def configure_repos(repos, update=True):
     :type update: bool, optional
     """
     for repo in repos:
+        print("Configuring helm repository", repo.name)
         repo.add()
     if update:
+        print("Updating helm repositories")
         helm("repo update")
 
 
