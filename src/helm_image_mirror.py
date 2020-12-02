@@ -565,7 +565,7 @@ def push_images_to_registries(images, registries):
     failures = {}
     for registry in registries:
         pushed, tf, pf, cf = registry.tag_and_push(images)
-        failures[registry] = {
+        failures[registry.name] = {
             "Pushed": pushed,
             "Failed to tag": tf,
             "Failed to push": pf,
