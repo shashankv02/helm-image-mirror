@@ -271,6 +271,12 @@ class Chart:
     def images(self):
         return parse_images(self.template())
 
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 def get_charts(charts, global_fetch_policy):
     """Get all Chart objects loaded from charts configuration
@@ -284,7 +290,7 @@ def get_charts(charts, global_fetch_policy):
     :return: list of Charts
     :rtype: [Chart]
     """
-    charts = []
+    chart_objs = []
     for chart_i, chart in enumerate(charts):
         chart_fetch_policy = chart.get(FETCH_KEY, global_fetch_policy)
         chart_name = chart.get(NAME_KEY)
@@ -304,8 +310,8 @@ def get_charts(charts, global_fetch_policy):
                 err = get_error_type(VERION_KEY, version_str, version)
                 error(err, parents=[CHARTS_KEY, VERSIONS_KEY], index=version_i)
                 continue
-            local_dir = version.get(FETCH_DIR_KEY) or "/tmp/{}".format(version_i)
-            charts.append(
+            local_dir = version.get(FETCH_DIR_KEY) or "/tmp/{}/{}".format(chart_name, version_i)
+            chart_objs.append(
                 Chart(
                     repo_name=repo_name,
                     chart_name=chart_name,
@@ -314,7 +320,7 @@ def get_charts(charts, global_fetch_policy):
                     fetch_policy=version_fetch_policy,
                 )
             )
-    return charts
+    return chart_objs
 
 
 def get_all_images(charts):
