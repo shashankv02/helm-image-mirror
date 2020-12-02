@@ -122,8 +122,8 @@ def configure_repos(repos, parents=[]):
             is_err = True
         if is_err:
             continue
-        username = repo.get(username) or g_username
-        password = repo.get(password) or g_password
+        username = repo.get(USERNAME_KEY) or g_username
+        password = repo.get(PASSWORD_KEY) or g_password
         cmd  = "repo add {name} {remote}".format(name=name, remote=remote)
         if username and password:
             cmd_template = "{} --username {} --password {}"
