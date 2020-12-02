@@ -646,6 +646,9 @@ def main(file):
     failed_to_pull = pull_images(images)
     pulled_images = images - failed_to_pull
     failures = push_images_to_registries(pulled_images, registries)
+
+    # Report status
+    print("{:=^50}".format(" Status "))
     print_dict(
         {
             "All images": images,
@@ -653,6 +656,7 @@ def main(file):
         }
     )
     print_dict(failures)
+    print("{:=^50}".format(" Status "))
 
 
 if __name__ == "__main__":
