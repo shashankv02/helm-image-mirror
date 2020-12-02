@@ -1,11 +1,12 @@
 VERSION=`git describe --tags --always`
+IMAGE=helm-images:$VERSION
 
 function build() {
-    docker build -t helm-images:$VERSION
+    docker build -t $IMAGE
 }
 
 function run() {
-    docker run -it --rm -v $PWD:/workdir $VERSION
+    docker run -it --rm -v $PWD:/workdir $IMAGE
 }
 
 $1
