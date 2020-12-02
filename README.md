@@ -1,4 +1,4 @@
-## Helm Images
+## Helm Image Mirror
 
 This tool takes a yaml formatted config file as input in which user
 can specify a list of helm repositories, helm charts and docker registries.
@@ -76,3 +76,35 @@ push: true
 # to the specified registries
 retain: false
 ```
+
+## How to use
+
+helm_image_mirror is available as a docker image. The host machines
+docker socket must be mounted into the container as it uses the
+host machine's docker engine to pull, retag and push the images.
+
+### Step 1:
+
+Create the configuration file. See [sample.yaml]("./sample-config.yaml")
+
+### Step 2:
+Mount the configuration file into `/workdir` directory of the container
+and run the docker image.
+
+```
+export DOCKER_SOCK=/var/run/docker.sock
+docker run -it --rm -v $DOCKER_SOCK:$DOCKER_SOCK -v $PWD:/workdir helm_image_mirror:latest
+```
+
+## How to build
+
+`make build` will trigger the build and generate the docker image
+
+## How to contribute
+
+1. Fork this repo
+
+2. Make changes in the forked copy
+
+3. Submit a pull request
+
