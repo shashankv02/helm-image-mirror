@@ -125,15 +125,16 @@ def configure_repos(repos, parents=[]):
             continue
         username = repo.get(USERNAME_KEY) or g_username
         password = repo.get(PASSWORD_KEY) or g_password
-        cmd  = "repo add {name} {remote}".format(name=name, remote=remote)
+        base_cmd  = "repo add {name} {remote}".format(name=name, remote=remote)
         if username and password:
             cmd_template = "{} --username {} --password {}"
-            cmd = cmd_template.format(cmd, username, password)
-            masked_cmd = cmd_template.format(cmd, username, "<snipped>")
+            cmd = cmd_template.format(base_cmd, username, password)
+            masked_cmd = cmd_template.format(base_cmd, username, "<snipped>")
             print("helm " + masked_cmd)
+            helm(cmd, print_cmd=False)
         else:
-            print("helm " + cmd)
-        helm(cmd, print_cmd=False)
+            helm(base_cmd)
+
     print("Finished configuring repositories")
 
 
