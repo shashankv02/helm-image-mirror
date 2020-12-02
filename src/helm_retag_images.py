@@ -254,7 +254,7 @@ def push_images(images, registries, g_push, g_retain, parents):
 def run(file):
     # parse_input
     config = parse_input(file)
-    charts, repos, registries = config[CHARTS_KEY], config[REPOS_KEY]
+    charts, repos = config[CHARTS_KEY], config[REPOS_KEY]
     global_fetch_policy = config.get(FETCH_KEY, True)
     init_scripts = config[INIT_SCRIPTS_KEY]
     run_init_scripts(init_scripts)
