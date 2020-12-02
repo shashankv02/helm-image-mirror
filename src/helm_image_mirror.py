@@ -18,6 +18,7 @@ import pprint
 import yaml
 
 # Constants
+DEBUG = True
 REPOS_KEY = "repos"
 REPO_KEY = "repo"
 REPOS_ADD_KEY = "add"
@@ -179,6 +180,11 @@ class Repo:
         return not self.__eq__(other)
 
 
+def debug(*args, **kwargs):
+    if DEBUG:
+        print(*args, **kwargs)
+
+
 def load_config(file):
     """Loads given config file
     into memory
@@ -260,14 +266,15 @@ def parse_images(documents):
 
     def get_images(obj):
         images = set()
-        if not isinstance(obj, dict):
-            return images
-        for key, value in obj.items():
-            print("Checking key", key)
-            if key == "image" and isinstance(value, str):
-                print("Adding image", value)
-                images.add(value)
-            if isinstance(value, dict):
+        if isinstance(obj, list) or isinstance(obj, set):
+            for value in obj:
+                images.update(get_images(value))
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                debug("Checking key", key)
+                if key == "image" and isinstance(value, str):
+                    debug("Adding image", value)
+                    images.add(value)
                 images.update(get_images(value))
         return images
 
@@ -584,5 +591,8 @@ def main(file):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", required=True, help="configuration file path")
+    parser.add_argument("-d", "--debug", action="store_true", help="print debug logs")
+    if args.debug:
+        DEBUG = True
     args = parser.parse_args()
     sys.exit(main(args.config))
