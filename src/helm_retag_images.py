@@ -245,6 +245,7 @@ def push_images(images, registries, g_push, g_retain, parents):
         for image in images:
             image_name = image.split("/")[-1]
             target_name = "{}/{}".format(registry_name, image_name)
+            docker("pull {}".format(image))
             docker("tag {} {}".format(image, target_name))
             docker("push {}".format(target_name))
             if not retain:
