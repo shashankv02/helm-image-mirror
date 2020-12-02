@@ -44,9 +44,10 @@ def execute(command, print_cmd=True):
     subprocess.run(cmd, check=True, capture_output=True).stdout
 
 
-def helm(command, print_cmd=True):
+def helm(command, run=True, print_cmd=True):
+    cmd = "helm " + command
     try:
-        return execute("helm " + command, print_cmd=print_cmd)
+        return execute(cmd, print_cmd=print_cmd)
     except subprocess.CalledProcessError as e:
         print(e.output)
         raise
@@ -129,9 +130,9 @@ def configure_repos(repos, parents=[]):
             cmd_template = "{} --username {} --password {}"
             cmd = cmd_template.format(cmd, username, password)
             masked_cmd = cmd_template.format(cmd, username, "<snipped>")
-            print(masked_cmd)
+            print("helm " + masked_cmd)
         else:
-            print(cmd)
+            print("helm " + cmd)
         helm(cmd, print_cmd=False)
     print("Finished configuring repositories")
 
