@@ -1,2 +1,2 @@
-VERSION=`git describe --tags`
+VERSION=`git describe --tags --always`
 docker build -t helm-images:$VERSION .
