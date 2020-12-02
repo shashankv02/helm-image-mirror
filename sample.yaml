@@ -1,0 +1,14 @@
+charts:
+  - fetch: true
+    name: healthbot-helm-dev/config-manager
+    versions:
+      - fetch: true
+        version: 3.0.0-dev-24-g99f1ac8
+fetch: true
+pull_images: true
+push: true
+retag: true
+init_scripts:
+  - init.sh
+registries:
+  - svl-artifactory.juniper.net/healthbot-registry/helm/test
