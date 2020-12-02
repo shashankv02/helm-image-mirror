@@ -12,4 +12,4 @@ COPY --from=builder /usr/local/bin/helm /usr/local/bin/helm
 RUN python3 -m pip install pyyaml
 
 ADD src/ /usr/local/bin/
-CMD ["helm_retag_images.py"]
+CMD ["helm_images.py"]
