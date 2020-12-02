@@ -230,21 +230,21 @@ def get_error_type(key, value, obj):
 
 def push_images(images, registries, g_push, g_retain, parents):
     for i, registry in enumerate(registries):
-        name = registry.get(NAME_KEY)
-        if not name:
-            err = get_error_type(NAME_KEY, name, registry)
+        registry_name = registry.get(NAME_KEY)
+        if not registry_name:
+            err = get_error_type(NAME_KEY, registry_name, registry)
             error(err, parents=parents, index=i)
             continue
         push = registry.get(PUSH_KEY, g_push)
         retain = registry.get(RETAIN_KEY, g_retain)
         if not push:
             print(
-                "Not pushing images to registry", name, "as push field is set to false"
+                "Not pushing images to registry", registry_name, "as push field is set to false"
             )
             continue
         for image in images:
             image_name = image.split("/")[-1]
-            target_name = "{}/{}".format(registry, image_name)
+            target_name = "{}/{}".format(registry_name, image_name)
             docker("tag {} {}".format(image, target_name))
             docker("push {}".format(target_name))
             if not retain:
