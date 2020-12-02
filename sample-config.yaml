@@ -15,14 +15,14 @@ repos:
 
 # charts from which the images must be parsed
 charts:
-  - repo: healthbot-helm-dev
+  - repo: stable
     # name of the chart
-    name: config-manager
+    name: redis
     # (optional) overrides global fetch setting
     # from remote repository
     fetch: true
     versions:
-      - version: 3.0.0-dev-24-g99f1ac8
+      - version: 3.0.0
         # (optional) override chart specific fetch setting
         fetch: true
         # (optional) local_dir specifies the local directory in which the
