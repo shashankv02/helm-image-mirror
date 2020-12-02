@@ -425,6 +425,7 @@ def get_all_images(charts):
     """
     images = set()
     for chart in charts:
+        chart.fetch()
         images.update(chart.images())
     return images
 
