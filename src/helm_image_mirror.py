@@ -394,11 +394,13 @@ def get_repo_objs(repos, g_username, g_password, parents=[]):
         is_err = False
         name = repo.get(NAME_KEY)
         if not name:
-            error(Errors.missing_required_key(NAME_KEY), parents=parents, index=i)
+            err = get_error_type(NAME_KEY, name, repo)
+            error(err, parents=parents, index=i)
             is_err = True
         remote = repo.get(REMOTE_KEY)
         if not remote:
-            error(Errors.missing_required_key(NAME_KEY), parents=parents, index=i)
+            err = get_error_type(REMOTE_KEY, remote, repo)
+            error(err, parents=parents, index=i)
             is_err = True
         if is_err:
             continue
@@ -425,7 +427,7 @@ def get_repos(repos, parents):
     :type parents: [str]
     """
     g_username, g_password = repos[USERNAME_KEY], repos[PASSWORD_KEY]
-    parents += REPOS_ADD_KEY
+    parents.append(REPOS_ADD_KEY)
     repos_to_add = repos.get(REPOS_ADD_KEY, [])
     return get_repo_objs(repos_to_add, g_username, g_password, parents=parents)
 
