@@ -130,13 +130,27 @@ class Registry:
                 self.name,
                 "as push is set to false",
             )
+        tag_failures = set()
+        push_failures = set()
+        cleanup_failures = set()
         for image in images:
             image_name = image.split("/")[-1]
             target_name = "{}/{}".format(self.name, image_name)
-            docker("tag {} {}".format(image, target_name))
-            docker("push {}".format(target_name))
+            try:
+                docker("tag {} {}".format(image, target_name))
+            except subprocess.CalledProcessError:
+                tag_failures.add((image, target_name))
+                continue
+            try:
+                docker("push {}".format(target_name))
+            except subprocess.CalledProcessError:
+                push_failures.add(target_name)
             if not self.retain:
-                docker("rmi {}".format(target_name))
+                try:
+                    docker("rmi {}".format(target_name))
+                except subprocess.CalledProcessError:
+                    cleanup_failures.add(target_name)
+        return tag_failures, push_failures, cleanup_failures
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
@@ -523,9 +537,17 @@ def pull_images(images):
 
     :param images: list of images
     :type images: [str]
+    :return: images that could not be pulled
+    :rtype: set(str)
     """
+    failed_images = set()
     for image in images:
-        docker("pull {}".format(image))
+        try:
+            docker("pull {}".format(image))
+        except subprocess.CalledProcessError:
+            print("Unable to pull image", image)
+            failed_images.add(image)
+    return failed_images
 
 
 def push_images_to_registries(images, registries):
@@ -535,9 +557,18 @@ def push_images_to_registries(images, registries):
     :type images: [str]
     :param registries: list of Regitries
     :type registries: [Registry]
+    :return: tag failures, push failures and cleanup failures
+    :rtype: (set((str, str)), set(str), set(str))
     """
+    tag_failures = set()
+    push_failures = set()
+    cleanup_failures = set()
     for registry in registries:
-        registry.tag_and_push(images)
+        tf, pf, cf = registry.tag_and_push(images)
+        tag_failures.update(tf)
+        push_failures.update(pf)
+        cleanup_failures.update(cf)
+    return tag_failures, push_failures, cleanup_failures
 
 
 def configure_repos(repos, update=True):
@@ -553,6 +584,18 @@ def configure_repos(repos, update=True):
         repo.add()
     if update:
         helm("repo update")
+
+
+def format_failures(failures):
+    """Prints failres if any
+
+    :param failures: Dictionary of failures
+        mapping failure type and failed items
+    :type failures: Dict
+    """
+    for msg, items in failures.items():
+        if items:
+            pprint.pprint(msg, items)
 
 
 def main(file):
@@ -595,8 +638,18 @@ def main(file):
     registries = get_registries(
         registries, g_retain=g_retain, g_push=g_push, parents=[REGISTRIES_KEY]
     )
-    pull_images(images)
-    push_images_to_registries(images, registries)
+    failed_to_pull = pull_images(images)
+    tag_failures, push_failures, cleanup_failures = push_images_to_registries(
+        images, registries
+    )
+    format_failures(
+        {
+            "Failed to pull": failed_to_pull,
+            "Failed to tag": tag_failures,
+            "Failed to push": push_failures,
+            "Failed to cleanup": cleanup_failures,
+        }
+    )
 
 
 if __name__ == "__main__":
