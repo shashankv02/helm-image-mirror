@@ -1,8 +1,10 @@
+## Helm Images
+
 This tool takes a yaml formatted config file as input in which user
 can specify a list of helm repositories, helm charts and docker registries.
-The helm charts will be downloaded, parsed to find all the images mentioned
-in the charts and the images can be re-tagged and pushed to the specified
-docker registries
+The helm charts will be downloaded, all the images mentioned
+in the charts are deduced and the images are re-tagged
+and pushed to the specified docker registries.
 
 
 ## Sample configuration file
