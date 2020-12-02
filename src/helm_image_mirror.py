@@ -263,6 +263,7 @@ def parse_images(documents):
         if not isinstance(obj, dict):
             return images
         for key, value in obj.items():
+            print("Checking key", key)
             if key == "image" and isinstance(value, str):
                 images.add(value)
             if isinstance(value, dict):
