@@ -44,7 +44,7 @@ def execute(command, print_cmd=True):
     if print_cmd:
         print(command)
     cmd = shlex.split(command)
-    subprocess.run(cmd, check=True, capture_output=True).stdout
+    return subprocess.run(cmd, check=True, capture_output=True).stdout
 
 
 def helm(command, run=True, print_cmd=True):
