@@ -66,6 +66,13 @@ class Chart:
                     self.local_dir, self.version, self.repo_name, self.chart_name
                 )
             )
+        else:
+            print(
+                "Using local directory",
+                self.local_dir,
+                "as fetch is set to false for chart",
+                "{}/{}-{}".format(self.repo_name, self.chart_name, self.version),
+            )
 
     def template(self):
         return helm("template {}/{}".format(self.local_dir, self.chart_name))
@@ -156,7 +163,7 @@ def load_config(file):
     """
     try:
         with open(file, "r") as f:
-            config = yaml.load(f)
+            config = yaml.safe_load(f)
     except IOError as e:
         print(e)
         return None
