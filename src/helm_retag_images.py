@@ -58,11 +58,15 @@ def get_fetch_policy(global_policy, chart_policy, version_policy):
     return bool(global_policy)
 
 def run_init_scripts(init_scripts):
+    print("Executing initialization scripts")
     for script in init_scripts:
         if not os.path.isfile(script):
             print(script, "not found!")
             continue
-        execute(os.path.abspath(script))
+        abspath = os.path.abspath(script)
+        print("Executing", abspath)
+        execute(abspath)
+    print("Finished executing initialization scripts")
 
 
 def run(file):
