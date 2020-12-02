@@ -50,7 +50,7 @@ def helm(command, run=True, print_cmd=True):
     try:
         return execute(cmd, print_cmd=print_cmd)
     except subprocess.CalledProcessError as e:
-        print(e.output)
+        print(e.output, e.stderr)
         raise
 
 
