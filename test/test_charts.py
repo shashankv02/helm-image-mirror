@@ -10,7 +10,7 @@ import yaml
 base_path = re.search("^(.*)/test/", os.path.abspath(__file__))
 sys.path.append(os.path.join(base_path.group(1), "src"))
 
-from helm_images import Chart, get_charts
+from helm_image_mirror import Chart, get_charts
 
 config = """
 charts:

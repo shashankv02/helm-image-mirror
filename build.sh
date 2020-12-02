@@ -1,7 +1,7 @@
 #!/bin/bash
 
 VERSION=`git describe --tags --always`
-IMAGE=helm-images:$VERSION
+IMAGE=helm_image_mirror:$VERSION
 
 function build() {
     docker build -t $IMAGE .

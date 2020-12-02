@@ -6,3 +6,5 @@ run:
 
 test:
 	pytest
+
+.PHONY: build run test
