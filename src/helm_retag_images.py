@@ -9,6 +9,7 @@ import yaml
 REPOS_KEY = "repos"
 REPOS_ADD_KEY = "add"
 REMOTE_KEY = "remote"
+UPDATE_KEY = "update"
 CHARTS_KEY = "charts"
 FETCH_KEY = "fetch"
 VERSIONS_KEY = "versions"
@@ -134,7 +135,6 @@ def configure_repos(repos, parents=[]):
             helm(cmd, print_cmd=False)
         else:
             helm(base_cmd)
-
     print("Finished configuring repositories")
 
 
@@ -148,6 +148,9 @@ def run(file):
 
     # Configure repos
     configure_repos(repos, parents=[REPOS_KEY])
+
+    # Update repos
+    helm("repo update")
 
     # fetch charts
     images = set()
