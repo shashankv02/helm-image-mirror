@@ -129,7 +129,9 @@ def configure_repos(repos, parents=[]):
             cmd_template = "{} --username {} --password {}"
             cmd = cmd_template.format(cmd, username, password)
             masked_cmd = cmd_template.format(cmd, username, "<snipped>")
-        print(masked_cmd)
+            print(masked_cmd)
+        else:
+            print(cmd)
         helm(cmd, print_cmd=False)
     print("Finished configuring repositories")
 
