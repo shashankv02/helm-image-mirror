@@ -270,9 +270,9 @@ def parse_images(documents):
         return images
 
     docs = yaml.safe_load_all(documents)
-    print(docs)
     images = set()
     for doc in docs:
+        print(doc)
         images.update(get_images(doc))
     return images
 
