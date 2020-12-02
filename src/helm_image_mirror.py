@@ -341,7 +341,7 @@ def error(error, parents=[], index=None):
         if isinstance(parents, list):
             parents = ".".join(parents)
         msg = "{} in section {}".format(msg, parents)
-    if index:
+    if isinstance(index, int):
         msg = "{} at index {}".format(msg, index)
     print(msg)
 
