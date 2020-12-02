@@ -61,7 +61,7 @@ def get_images(obj):
     images = set()
     if not isinstance(obj, dict):
         return images
-    for key, value in obj:
+    for key, value in obj.items():
         if key == "image" and isinstance(value, str):
             images.add(value)
         if isinstance(value, dict):
