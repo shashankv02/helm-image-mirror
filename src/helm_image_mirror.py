@@ -149,7 +149,7 @@ class Registry:
                 docker("push {}".format(target_name))
             except subprocess.CalledProcessError:
                 push_failures.add(target_name)
-            succeeded.add(image)
+            succeeded.add(target_name)
             if not self.retain:
                 try:
                     docker("rmi {}".format(target_name))
