@@ -310,7 +310,7 @@ def get_charts(charts, global_fetch_policy):
                 err = get_error_type(VERION_KEY, version_str, version)
                 error(err, parents=[CHARTS_KEY, VERSIONS_KEY], index=version_i)
                 continue
-            local_dir = version.get(FETCH_DIR_KEY) or "/tmp/{}/{}".format(chart_name, version_i)
+            local_dir = version.get(FETCH_DIR_KEY) or "/tmp/{}/{}/{}".format(repo_name, chart_name, version_i)
             chart_objs.append(
                 Chart(
                     repo_name=repo_name,
