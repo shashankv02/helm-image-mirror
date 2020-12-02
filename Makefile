@@ -1,5 +1,5 @@
 build:
-	./build.sh build
+	bash -ex ./build.sh build
 
 run:
-	./build.sh run
+	bash -ex ./build.sh run

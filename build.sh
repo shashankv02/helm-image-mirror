@@ -1,3 +1,5 @@
+#!/bin/bash
+
 VERSION=`git describe --tags --always`
 IMAGE=helm-images:$VERSION
 
