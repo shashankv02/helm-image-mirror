@@ -38,8 +38,15 @@ charts:
         # (optional) override chart specific fetch setting
         fetch: true
         # (optional) local_dir specifies the local directory in which the
-        # chart tgz exists if fetch is set to false
+        # chart .tgz exists if fetch is set to false
         local_dir:
+        # (optional) values to be passed to chart before rendering the templates
+        # can be used for charts that have mandatorily required values
+        values:
+          # (optional) values to be passed to `--set` flag
+          set:
+          # (optional) values to be passed to `--set-string` flag
+          set_str:
 
 
 # registries specifies the docker registries to which the images must be pushed

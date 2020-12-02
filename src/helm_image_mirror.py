@@ -35,6 +35,9 @@ INIT_SCRIPTS_KEY = "init_scripts"
 REGISTRIES_KEY = "registries"
 PUSH_KEY = "push"
 RETAIN_KEY = "retain"
+VALUES_KEY = "values"
+SET_KEY = "set"
+SET_STRING_KEY = "set_string"
 
 
 class Errors:
@@ -52,12 +55,13 @@ class Errors:
 class Chart:
     """Helm chart configuration"""
 
-    def __init__(self, repo_name, chart_name, version, local_dir, fetch_policy):
+    def __init__(self, repo_name, chart_name, version, local_dir, fetch_policy, values={}):
         self.repo_name = repo_name
         self.chart_name = chart_name
         self.version = version
         self.local_dir = local_dir
         self.fetch_policy = fetch_policy
+        self.values = values
 
     def fetch(self):
         if self.fetch_policy:
@@ -74,8 +78,23 @@ class Chart:
                 "{}/{}-{}".format(self.repo_name, self.chart_name, self.version),
             )
 
+    def get_flags(self):
+        set_flag = self.values.get(SET_KEY)
+        set_string_flag = self.values.get(SET_STRING_KEY)
+        flags = ""
+        if set_flag:
+            flags = "{} --set {}".format(flags, set_flag)
+        if set_string_flag:
+            flags = "{} --set-string {}".format(flags, set_string_flag)
+        return flags
+
+    def get_template_cmd(self):
+        flags = self.get_flags()
+        return "template {} {}/{}".format(flags, self.local_dir, self.chart_name)
+
     def template(self):
-        return helm("template {}/{}".format(self.local_dir, self.chart_name))
+        cmd = self.get_template_cmd()
+        return helm(cmd)
 
     def images(self):
         return parse_images(self.template())
@@ -410,6 +429,7 @@ def get_charts(charts, global_fetch_policy):
             local_dir = version.get(FETCH_DIR_KEY) or "/tmp/{}/{}/{}".format(
                 repo_name, chart_name, version_i
             )
+            values = version.get(VALUES_KEY, {})
             chart_objs.append(
                 Chart(
                     repo_name=repo_name,
@@ -417,6 +437,7 @@ def get_charts(charts, global_fetch_policy):
                     version=version_str,
                     local_dir=local_dir,
                     fetch_policy=version_fetch_policy,
+                    values=values,
                 )
             )
     return chart_objs

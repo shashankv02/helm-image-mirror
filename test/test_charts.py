@@ -72,3 +72,24 @@ def test_get_charts(global_fetch_policy):
         ),
     ]
     assert charts == expected
+
+
+@pytest.mark.parametrize(
+    "chart,expected",
+    [
+        (
+          Chart("stable", "redis", "1.0.0", "tc1", True, {"set": "abx.xyz=1,abc.pqr=2", "set_string": "abc.asd=True"}),
+          "template  --set abx.xyz=1,abc.pqr=2 --set-string abc.asd=True tc1/redis"
+        ),
+        (
+          Chart("stable", "redis", "1.0.0", "tc1", True, {"set": "abx.xyz=1,abc.pqr=2"}),
+          "template  --set abx.xyz=1,abc.pqr=2 tc1/redis"
+        ),
+         (
+          Chart("stable", "redis", "1.0.0", "tc1", True, {}),
+          "template  tc1/redis"
+        )
+    ],
+)
+def test_get_add_cmd(chart, expected):
+    assert chart.get_template_cmd() == expected
