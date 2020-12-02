@@ -154,8 +154,12 @@ def load_config(file):
     :return: loaded config
     :rtype: Dict
     """
-    with open(file, "r") as f:
-        config = yaml.load(f)
+    try:
+        with open(file, "r") as f:
+            config = yaml.load(f)
+    except IOError as e:
+        print(e)
+        return None
     return config
 
 
@@ -502,6 +506,8 @@ def main(file):
     """
     # Parse configuration
     config = load_config(file)
+    if not config:
+        return 1
 
     # Run initialization scripts
     init_scripts = config.get(INIT_SCRIPTS_KEY, [])
@@ -537,5 +543,6 @@ def main(file):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("-c", "--config", required=True, help="configuration file path")
     args = parser.parse_args()
     sys.exit(main(args.config))
