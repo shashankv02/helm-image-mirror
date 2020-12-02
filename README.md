@@ -103,8 +103,7 @@ Mount the configuration file into `/workdir` directory of the container
 and run the docker image.
 
 ```
-export DOCKER_SOCK=/var/run/docker.sock
-docker run -it --rm -v $DOCKER_SOCK:$DOCKER_SOCK -v $PWD:/workdir helm_image_mirror:latest
+docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock -v $PWD:/workdir shashankv/helm_image_mirror:v1.0.0-beta
 ```
 
 ## How to build
