@@ -105,7 +105,7 @@ class Chart:
     def images(self):
         print("Finding images in chart", self.combined_name)
         images = parse_images(self.template())
-        print(images)
+        pprint.pprint("Found images:", images)
         return images
 
     def __eq__(self, other):
@@ -633,9 +633,6 @@ def main(file):
     global_fetch_policy = config.get(FETCH_KEY, True)
     charts = get_charts(charts, global_fetch_policy=global_fetch_policy)
     images = get_all_images(charts)
-
-    print("Found images")
-    pprint.pprint(images)
 
     # Retag and push images
     print("Retagging and pushing images to destinations")
