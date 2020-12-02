@@ -103,7 +103,9 @@ class Chart:
 
     def images(self):
         print("Finding images in chart", self.combined_name)
-        return parse_images(self.template())
+        images = parse_images(self.template())
+        print(images)
+        return images
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
