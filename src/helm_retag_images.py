@@ -110,6 +110,31 @@ def error(error, parents=[], index=None):
     print(msg)
 
 
+def get_repo_username_password(repo, g_username, g_password):
+    """Returns username password configured for given helm repository
+
+    If username or password keys are specified in repo configuration,
+    return them else fallback to g_username, g_password
+
+    :param repo: Repository configuration
+    :type repo: Dict
+    :param g_username: fallback username
+    :type g_username: str
+    :param g_password: fallback password
+    :type g_password: str
+    :return: (username, password)
+    :rtype: (str, str)
+    """
+    if USERNAME_KEY not in repo:
+        username = g_username
+    else:
+        username = repo.get(USERNAME_KEY)
+    if PASSWORD_KEY not in repo:
+        password = g_password
+    else:
+        password = repo.get(PASSWORD_KEY)
+    return username, password
+
 def configure_repos(repos, parents=[]):
     print("Configuring repositories")
     g_username, g_password = repos[USERNAME_KEY], repos[PASSWORD_KEY]
@@ -126,8 +151,7 @@ def configure_repos(repos, parents=[]):
             is_err = True
         if is_err:
             continue
-        username = repo.get(USERNAME_KEY) or g_username
-        password = repo.get(PASSWORD_KEY) or g_password
+        username, password = get_repo_username_password(repo, g_username, g_password)
         base_cmd  = "repo add {name} {remote}".format(name=name, remote=remote)
         if username and password:
             cmd_template = "{} --username {} --password {}"
