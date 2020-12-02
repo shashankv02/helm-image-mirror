@@ -88,23 +88,32 @@ push: true
 retain: false
 ```
 
-## How to use
+## Installation
 
-helm_image_mirror is available as a docker image. The host machines
-docker socket must be mounted into the container as it uses the
-host machine's docker engine to pull, retag and push the images.
+Following script can be fetched and executed to install helm_image_mirror. It is a simple two-liner which executes
+the docker image shashankv/helm_image_mirror:v1.0.0-beta. Feel free to edit the script
+as required.
+
+```
+# Download the script
+$ curl -fsSL -o helm_image_mirror.sh https://raw.githubusercontent.com/shashankv02/helm-image-mirror/main/helm_image_mirror.sh
+
+# Add execute permissions
+$ chmod +x helm_image_mirror.sh
+
+# Copy the script to location in your $PATH
+$ mv helm_image_mirror.sh /usr/local/bin/helm_image_mirror
+```
+
+## How to use
 
 ### Step 1:
 
 Create the configuration file. See [sample.yaml](sample-config.yaml)
 
 ### Step 2:
-Mount the configuration file into `/workdir` directory of the container
-and run the docker image.
 
-```
-docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock -v $PWD:/workdir shashankv/helm_image_mirror:v1.0.0-beta
-```
+`helm_image_mirror config.yaml` (Replace config.yaml with your config file)
 
 ## How to build
 
