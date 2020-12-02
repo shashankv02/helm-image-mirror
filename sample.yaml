@@ -18,8 +18,10 @@ charts:
 fetch: true
 pull_images: true
 push: true
-retag: true
+retain: true
 init_scripts:
   - init.sh
 registries:
-  - svl-artifactory.juniper.net/healthbot-registry/helm/test
+  - name: svl-artifactory.juniper.net/healthbot-registry/helm/test
+    retain: false
+    push: true
