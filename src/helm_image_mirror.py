@@ -518,6 +518,16 @@ def get_registries(registries, g_push, g_retain, parents=[]):
     return registry_objs
 
 
+def pull_images(images):
+    """Pull given images
+
+    :param images: list of images
+    :type images: [str]
+    """
+    for image in images:
+        docker("pull {}".format(image))
+
+
 def push_images_to_registries(images, registries):
     """Pushes all given images to given registries
 
@@ -585,6 +595,7 @@ def main(file):
     registries = get_registries(
         registries, g_retain=g_retain, g_push=g_push, parents=[REGISTRIES_KEY]
     )
+    pull_images(images)
     push_images_to_registries(images, registries)
 
 
