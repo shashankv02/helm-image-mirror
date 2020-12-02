@@ -1,3 +1,9 @@
+repos:
+  - name: healthbot-helm-dev
+    remote: https://svl-artifactory.juniper.net/artifactory/healthbot-helm-dev
+    username:
+    password:
+
 charts:
   - fetch: true
     name: healthbot-helm-dev/config-manager
