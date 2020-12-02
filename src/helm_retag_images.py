@@ -72,7 +72,7 @@ def get_images(obj):
 
 def parse_images(manifests):
     images = set()
-    docs = yaml.safe_load(manifests)
+    docs = yaml.safe_load_all(manifests)
     images = set()
     for doc in docs:
         images.add(get_images(doc))
