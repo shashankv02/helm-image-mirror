@@ -1,4 +1,7 @@
 repos:
+  username:
+  password:
+  add:
   - name: healthbot-helm-dev
     remote: https://svl-artifactory.juniper.net/artifactory/healthbot-helm-dev
     username:
