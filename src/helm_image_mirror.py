@@ -55,13 +55,18 @@ class Errors:
 class Chart:
     """Helm chart configuration"""
 
-    def __init__(self, repo_name, chart_name, version, local_dir, fetch_policy, values={}):
+    def __init__(
+        self, repo_name, chart_name, version, local_dir, fetch_policy, values={}
+    ):
         self.repo_name = repo_name
         self.chart_name = chart_name
         self.version = version
         self.local_dir = local_dir
         self.fetch_policy = fetch_policy
         self.values = values
+        self.combined_name = "{}/{}-{}".format(
+            self.repo_name, self.chart_name, self.version
+        )
 
     def fetch(self):
         if self.fetch_policy:
@@ -75,7 +80,7 @@ class Chart:
                 "Using local directory",
                 self.local_dir,
                 "as fetch is set to false for chart",
-                "{}/{}-{}".format(self.repo_name, self.chart_name, self.version),
+                self.combined_name,
             )
 
     def get_flags(self):
@@ -97,6 +102,7 @@ class Chart:
         return helm(cmd)
 
     def images(self):
+        print("Finding images in chart", self.combined_name)
         return parse_images(self.template())
 
     def __eq__(self, other):
@@ -261,7 +267,6 @@ def parse_images(documents):
                 images.update(get_images(value))
         return images
 
-    images = set()
     docs = yaml.safe_load_all(documents)
     images = set()
     for doc in docs:
