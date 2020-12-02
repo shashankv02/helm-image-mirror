@@ -62,7 +62,7 @@ def run_init_scripts(init_scripts):
         if not os.path.isfile(script):
             print(script, "not found!")
             continue
-        execute(script)
+        execute(os.path.abspath(script))
 
 
 def run(file):
