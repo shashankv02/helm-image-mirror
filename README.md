@@ -85,7 +85,7 @@ host machine's docker engine to pull, retag and push the images.
 
 ### Step 1:
 
-Create the configuration file. See [sample.yaml]("./sample-config.yaml")
+Create the configuration file. See [sample.yaml](sample-config.yaml)
 
 ### Step 2:
 Mount the configuration file into `/workdir` directory of the container
