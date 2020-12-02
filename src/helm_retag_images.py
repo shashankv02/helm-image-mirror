@@ -7,11 +7,13 @@ import yaml
 
 # Constants
 REPOS_KEY = "repos"
+REPO_KEY = "repo"
 REPOS_ADD_KEY = "add"
 REMOTE_KEY = "remote"
 UPDATE_KEY = "update"
 CHARTS_KEY = "charts"
 FETCH_KEY = "fetch"
+FETCH_DIR_KEY = "local_dir"
 VERSIONS_KEY = "versions"
 VERION_KEY = "version"
 NAME_KEY = "name"
@@ -26,8 +28,8 @@ class Errors:
         return "missing required key " + key
 
     @staticmethod
-    def invalid_value(value=''):
-        return "invalid value " + value
+    def invalid_value(key, value=''):
+        return "invalid value {} for key {}".format(value, key)
 
 
 def template():
@@ -157,18 +159,35 @@ def run(file):
     for chart_i, chart in enumerate(charts):
         chart_fetch_policy = chart.get(FETCH_KEY, None)
         chart_name = chart.get(NAME_KEY)
+        repo_name = chart.get(REPO_KEY)
         if not chart_name:
-            print("No chart name specified for chart at index", chart_i)
+            if NAME_KEY not in chart:
+                err = Errors.missing_required_key(NAME_KEY)
+            else:
+                err = Errors.invalid_value(chart_name, NAME_KEY)
+            error(err, parents=[CHARTS_KEY], index=chart_i)
+            continue
+        if not repo_name:
+            if REPO_KEY not in chart:
+                err = Errors.missing_required_key(REPO_KEY)
+            else:
+                err = Errors.invalid_value(chart_name, REPO_KEY)
+            error(err, parents=[CHARTS_KEY], index=chart_i)
             continue
         for version_i, version in enumerate(chart[VERSIONS_KEY]):
             version_fetch_policy = version.get(FETCH_KEY, None)
             version_str = version.get(VERION_KEY)
             if not version_str:
-                print("No version string specified for chart", chart_name, "at index", version_i)
+                if VERION_KEY not in version:
+                    err = Errors.missing_required_key(VERION_KEY)
+                else:
+                    err = Errors.invalid_value(version_str, VERION_KEY)
+                error(err, parents=[CHARTS_KEY, VERSIONS_KEY], index=version_i)
                 continue
+            local_dir = version.get(FETCH_DIR_KEY) or "/tmp/{}".format(version_i)
             if get_fetch_policy(global_fetch_policy, chart_fetch_policy, version_fetch_policy):
-                helm('fetch --untar --untardir .  --version {} {}'.format(version_str, chart_name))
-            manifests = helm('template ./config-manager')
+                helm('fetch --untar --untardir {}  --version {} {}/{}'.format(local_dir, version_str, repo_name, chart_name))
+            manifests = helm('template {}/{}'.format(local_dir, chart_name))
             images.add(parse_images(manifests))
     print(images)
 

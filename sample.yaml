@@ -9,9 +9,11 @@ repos:
 
 charts:
   - fetch: true
-    name: healthbot-helm-dev/config-manager
+    repo: healthbot-helm-dev
+    name: config-manager
     versions:
       - fetch: true
+        local_dir:
         version: 3.0.0-dev-24-g99f1ac8
 fetch: true
 pull_images: true
