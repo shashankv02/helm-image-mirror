@@ -113,7 +113,7 @@ Create the configuration file. See [sample-config.yaml](sample-config.yaml)
 
 ### Step 2:
 
-`helm_image_mirror config.yaml` (Replace config.yaml with your config file)
+`helm_image_mirror -c config.yaml` (Replace config.yaml with your config file)
 
 ## How to build
 
@@ -126,4 +126,9 @@ Create the configuration file. See [sample-config.yaml](sample-config.yaml)
 2. Make changes in the forked copy
 
 3. Submit a pull request
+
+
+## Debugging
+
+Run with `-d` option for debug logs
 
