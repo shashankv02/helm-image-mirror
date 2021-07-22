@@ -21,8 +21,8 @@ charts:
     # (optional) overrides global fetch setting
     # from remote repository
     fetch: true
-    (optional) push specifies the list of target helm repositories to which
-    the chart should be pushed
+    # (optional) push specifies the list of target helm repositories to which
+    # the chart should be pushed
     push:
       - my_helm_repo
     # (optional) values to be passed to chart before rendering the templates

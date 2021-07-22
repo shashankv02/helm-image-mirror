@@ -57,7 +57,7 @@ class Chart:
     """Helm chart configuration"""
 
     def __init__(
-        self, repo_name, chart_name, version, local_dir, fetch_policy, values={}
+        self, repo_name, chart_name, version, local_dir, fetch_policy, values={}, push=[]
     ):
         self.repo_name = repo_name
         self.chart_name = chart_name
@@ -68,6 +68,7 @@ class Chart:
         self.combined_name = "{}/{}-{}".format(
             self.repo_name, self.chart_name, self.version
         )
+        self.push_targets = push
 
     def fetch(self):
         if self.fetch_policy:
@@ -85,14 +86,17 @@ class Chart:
             )
     
     def pull(self):
+        print("Pulling chart {}".format(self.combined_name))
         helm("pull {}/{} --version {}".format(
             self.repo_name, self.chart_name, self.version
         ))
         
 
     def push(self, target_repo):
+        print("Pushing chart {} to {} repository".format(
+            self.combined_name, target_repo.name))
         saved_chart_name = '{}-{}.tgz'.format(self.chart_name, self.version)
-        helm("push {} {}".format(saved_chart_name, target_repo.repo_name))
+        helm("chart push {} {}".format(saved_chart_name, target_repo.name))
 
 
     def get_flags(self):
@@ -144,6 +148,7 @@ class Registry:
                 self.name,
                 "as push is set to false",
             )
+            return [], [], [], []
         tag_failures = set()
         push_failures = set()
         cleanup_failures = set()
@@ -462,6 +467,7 @@ def get_charts(charts, global_fetch_policy):
         chart_values = chart.get(VALUES_KEY, {})
         chart_name = chart.get(NAME_KEY)
         repo_name = chart.get(REPO_KEY)
+        chart_push_targets = chart.get(PUSH_KEY, [])
         if not chart_name:
             err = get_error_type(NAME_KEY, chart_name, chart)
             error(err, parents=[CHARTS_KEY], index=chart_i)
@@ -481,6 +487,7 @@ def get_charts(charts, global_fetch_policy):
                 repo_name, chart_name, version_i
             )
             version_values = version.get(VALUES_KEY, chart_values)
+            version_push_targets = version.get(PUSH_KEY, chart_push_targets)
             chart_objs.append(
                 Chart(
                     repo_name=repo_name,
@@ -489,6 +496,7 @@ def get_charts(charts, global_fetch_policy):
                     local_dir=local_dir,
                     fetch_policy=version_fetch_policy,
                     values=version_values,
+                    push=version_push_targets,
                 )
             )
     return chart_objs
@@ -625,11 +633,11 @@ def push_charts(charts, repos):
         try:
             chart.pull()
         except subprocess.CalledProcessError as exp:
-            stat["pull"] = str(exp)
+            stat["pull"] = str(exp.stderr, 'utf-8')
         else:
             stat["pull"] = "Pulled succesfully"
         # Push the chart to target repositories
-        for repo_name in chart.push.get([]):
+        for repo_name in chart.push_targets:
             stat["push"] = {}
             # pass
             if repo_name not in repo_map:
@@ -641,7 +649,7 @@ def push_charts(charts, repos):
                 try:
                     chart.push(repo_map[repo_name])
                 except subprocess.CalledProcessError as exp:
-                    stat["push"][repo_name] = str(exp)
+                    stat["push"][repo_name] = str(exp.stderr, 'utf-8')
                 else:
                     stat["push"][repo_name] = "Pushed successfully"
     return status
@@ -705,12 +713,12 @@ def main(file):
         return
     global_fetch_policy = config.get(FETCH_KEY, True)
     charts = get_charts(charts, global_fetch_policy=global_fetch_policy)
-    images = get_all_images(charts)
 
     # push charts to target helm repositories
     chart_push_failures = push_charts(charts, repos)
 
     # Retag and push images
+    images = get_all_images(charts)
     print("Retagging and pushing images to destinations")
     registries = config.get(REGISTRIES_KEY)
     g_retain = config.get(RETAIN_KEY, False)
