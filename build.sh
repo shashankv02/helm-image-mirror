@@ -9,7 +9,7 @@ function build() {
 
 function run() {
     DOCKER_SOCK=/var/run/docker.sock
-    docker run -it --rm -v $DOCKER_SOCK:$DOCKER_SOCK -v $PWD:/workdir $IMAGE -c "$CONFIG"
+    docker run -it --rm -v $DOCKER_SOCK:$DOCKER_SOCK -v $PWD:/workdir -v $PWD/tmp:/tmp $IMAGE -c "$CONFIG" --debug
 }
 
 $1 "$@"

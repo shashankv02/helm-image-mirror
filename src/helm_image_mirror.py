@@ -39,6 +39,7 @@ RETAIN_KEY = "retain"
 VALUES_KEY = "values"
 SET_KEY = "set"
 SET_STRING_KEY = "set_string"
+DEBUG_HELP_MSG = "Use --debug option to see more information"
 
 
 class Errors:
@@ -87,8 +88,9 @@ class Chart:
     
     def pull(self):
         print("Pulling chart {}".format(self.combined_name))
-        helm("pull {}/{} --version {}".format(
-            self.repo_name, self.chart_name, self.version
+        os.makedirs(self.local_dir, exist_ok=True)
+        helm("pull {}/{} --version {} --destination {} --devel".format(
+            self.repo_name, self.chart_name, self.version, self.local_dir
         ))
         
 
@@ -96,7 +98,8 @@ class Chart:
         print("Pushing chart {} to {} repository".format(
             self.combined_name, target_repo.name))
         saved_chart_name = '{}-{}.tgz'.format(self.chart_name, self.version)
-        helm("chart push {} {}".format(saved_chart_name, target_repo.name))
+        saved_chart_path = os.path.join(self.local_dir, saved_chart_name)
+        helm("push {} {}".format(saved_chart_path, target_repo.name))
 
 
     def get_flags(self):
@@ -627,31 +630,40 @@ def push_charts(charts, repos):
     status = {}
     repo_map = list_to_dict(repos, "name")
     for chart in charts:
+        if not chart.push_targets:
+            continue
         status[chart.combined_name] = {}
         stat = status[chart.combined_name]
         # Pull the chart
         try:
             chart.pull()
         except subprocess.CalledProcessError as exp:
-            stat["pull"] = str(exp.stderr, 'utf-8')
+            if DEBUG:
+                msg = str(exp.stderr, 'utf-8')
+            else:
+                msg = "Unable to pull chart. {}".format(DEBUG_HELP_MSG)
+            stat["pull"] = msg
+            continue
         else:
             stat["pull"] = "Pulled succesfully"
+        
         # Push the chart to target repositories
         for repo_name in chart.push_targets:
             stat["push"] = {}
-            # pass
             if repo_name not in repo_map:
                 stat["push"][repo_name] = (
                     "Repository is not configured under repos section."
                     "Please configure it and retry."
                 )
-            else:
-                try:
-                    chart.push(repo_map[repo_name])
-                except subprocess.CalledProcessError as exp:
-                    stat["push"][repo_name] = str(exp.stderr, 'utf-8')
+                continue
+            try:
+                chart.push(repo_map[repo_name])
+            except subprocess.CalledProcessError as exp:
+                if DEBUG:
+                    msg = str(exp.stderr, 'utf-8')
                 else:
-                    stat["push"][repo_name] = "Pushed successfully"
+                    msg = "Unable to push chart. {}".format(DEBUG_HELP_MSG)
+                stat["push"][repo_name] = msg
     return status
     
 
@@ -731,7 +743,7 @@ def main(file):
     failures = push_images_to_registries(pulled_images, registries)
 
     # Report status
-    print("{:=^50}".format(" Status "))
+    print("{:=^50}".format(" Image Status "))
     print_dict(
         {
             "All images": images,
@@ -739,6 +751,7 @@ def main(file):
         }
     )
     print_dict(failures)
+    print("{:=^50}".format(" Chart Status "))
     print_dict(chart_push_failures)
     print("{:=^50}".format(" Status "))
 
