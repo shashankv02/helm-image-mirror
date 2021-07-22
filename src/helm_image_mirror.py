@@ -83,6 +83,17 @@ class Chart:
                 "as fetch is set to false for chart",
                 self.combined_name,
             )
+    
+    def pull(self):
+        helm("pull {}/{} --version {}".format(
+            self.repo_name, self.chart_name, self.version
+        ))
+        
+
+    def push(self, target_repo):
+        saved_chart_name = '{}-{}.tgz'.format(self.chart_name, self.version)
+        helm("push {} {}".format(saved_chart_name, target_repo.repo_name))
+
 
     def get_flags(self):
         set_flag = self.values.get(SET_KEY)
@@ -198,6 +209,7 @@ class Repo:
     def __ne__(self, other):
         return not self.__eq__(other)
 
+        
 
 def debug(*args, **kwargs):
     if DEBUG:
@@ -503,6 +515,23 @@ def get_error_type(key, value, obj):
     return Errors.invalid_value(key, value)
 
 
+def list_to_dict(lst, key):
+    """Convert list of objects to a dictionary mapping
+    given key in the object to object for faster queries
+
+    :param lst: list of objects. object must contain given key as attribute
+    :type lst: [Any]
+    :param key: Name of the key attribute in the object
+    :type key: str
+    :return: Dictionary mapping the key attribute from each object to the object
+    :rtype: Dict
+    """    
+    result = {}
+    for obj in lst:
+        result[getattr(obj, key)] = obj
+    return result
+
+
 def get_registries(registries, g_push, g_retain, parents=[]):
     """Get Registry objects instantiated from given registries
     configuration
@@ -579,6 +608,45 @@ def push_images_to_registries(images, registries):
     return failures
 
 
+def push_charts(charts, repos):
+    """Pushes given charts to specified target helm repositories
+
+    :param charts: list of charts
+    :type charts: [Chart]
+    :param repos: list of helm repositories configured globally
+    :type repos: [Repo]
+    """
+    status = {}
+    repo_map = list_to_dict(repos, "name")
+    for chart in charts:
+        status[chart.combined_name] = {}
+        stat = status[chart.combined_name]
+        # Pull the chart
+        try:
+            chart.pull()
+        except subprocess.CalledProcessError as exp:
+            stat["pull"] = str(exp)
+        else:
+            stat["pull"] = "Pulled succesfully"
+        # Push the chart to target repositories
+        for repo_name in chart.push.get([]):
+            stat["push"] = {}
+            # pass
+            if repo_name not in repo_map:
+                stat["push"][repo_name] = (
+                    "Repository is not configured under repos section."
+                    "Please configure it and retry."
+                )
+            else:
+                try:
+                    chart.push(repo_map[repo_name])
+                except subprocess.CalledProcessError as exp:
+                    stat["push"][repo_name] = str(exp)
+                else:
+                    stat["push"][repo_name] = "Pushed successfully"
+    return status
+    
+
 def configure_repos(repos, update=True):
     """Configures given helm repositories
 
@@ -639,6 +707,9 @@ def main(file):
     charts = get_charts(charts, global_fetch_policy=global_fetch_policy)
     images = get_all_images(charts)
 
+    # push charts to target helm repositories
+    chart_push_failures = push_charts(charts, repos)
+
     # Retag and push images
     print("Retagging and pushing images to destinations")
     registries = config.get(REGISTRIES_KEY)
@@ -660,6 +731,7 @@ def main(file):
         }
     )
     print_dict(failures)
+    print_dict(chart_push_failures)
     print("{:=^50}".format(" Status "))
 
 
