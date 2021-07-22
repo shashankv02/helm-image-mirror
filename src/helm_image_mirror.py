@@ -169,7 +169,8 @@ class Registry:
                 docker("push {}".format(target_name))
             except subprocess.CalledProcessError:
                 push_failures.add(target_name)
-            succeeded.add(target_name)
+            else:
+                succeeded.add(target_name)
             if not self.retain:
                 try:
                     docker("rmi {}".format(target_name))
@@ -665,6 +666,8 @@ def push_charts(charts, repos):
                 else:
                     msg = "Unable to push chart. {}".format(DEBUG_HELP_MSG)
                 stat["push"][repo_name] = msg
+            else:
+                stat["push"][repo_name] = "Pushed successfully"
     return status
     
 
@@ -728,7 +731,7 @@ def main(file):
     charts = get_charts(charts, global_fetch_policy=global_fetch_policy)
 
     # push charts to target helm repositories
-    chart_push_failures = push_charts(charts, repos)
+    chart_push_status = push_charts(charts, repos)
 
     # Retag and push images
     images = get_all_images(charts)
@@ -752,8 +755,9 @@ def main(file):
         }
     )
     print_dict(failures)
-    print("{:=^50}".format(" Chart Status "))
-    print_dict(chart_push_failures)
+    if chart_push_status:
+        print("{:=^50}".format(" Chart Status "))
+        print_dict(chart_push_status)
     print("{:=^50}".format(" Status "))
 
 
