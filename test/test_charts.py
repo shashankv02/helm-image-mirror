@@ -21,6 +21,9 @@ charts:
     values:
       set: abc.xyz=1
       set_str: pqr.xyz=true
+    push:
+      - target1
+      - target2
     versions:
     - fetch: true
       local_dir: tc1
@@ -33,6 +36,8 @@ charts:
       version: 2.0.0
     - local_dir: tc3
       version: 3.0.0
+      push:
+        - target3
   # chart specific false
   - fetch: false
     repo: prod
@@ -66,9 +71,10 @@ def test_get_charts(global_fetch_policy):
     charts = get_charts(charts_config, global_fetch_policy)
     group1_values = {"set": "abc.xyz=1", "set_str": "pqr.xyz=true"}
     expected = [
-        Chart("stable", "redis", "1.0.0", "tc1", True, {"set": "abc.xyz=2", "set_str": "qwe.rty=false"}),
-        Chart("stable", "redis", "2.0.0", "tc2", False, group1_values),
-        Chart("stable", "redis", "3.0.0", "tc3", True, group1_values),
+        Chart("stable", "redis", "1.0.0", "tc1", True, 
+          {"set": "abc.xyz=2", "set_str": "qwe.rty=false"}, ['target1', 'target2']),
+        Chart("stable", "redis", "2.0.0", "tc2", False, group1_values, ['target1', 'target2']),
+        Chart("stable", "redis", "3.0.0", "tc3", True, group1_values, ['target3']),
         Chart("prod", "mongo", "4.0.0", "tc4", True),
         Chart("prod", "mongo", "5.0.0", "tc5", False),
         Chart("prod", "mongo", "6.0.0", "/tmp/prod/mongo/2", False),
