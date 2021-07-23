@@ -33,6 +33,12 @@ charts:
     # (optional) overrides global fetch setting
     # from remote repository
     fetch: true
+    # (optional) push specifies the list of target helm repositories to which
+    # the chart should be pushed
+    push:
+      - my_helm_repo
+    # (optional) values to be passed to chart before rendering the templates
+    # can be used for charts that have mandatorily required values
     values:
       # (optional) values to be passed to `--set` flag
       set:
@@ -45,7 +51,12 @@ charts:
         # (optional) local_dir specifies the local directory in which the
         # chart tgz exists if fetch is set to false
         local_dir:
-        # (optional) override values for version
+        # (optional) overrides push specified at chart level for the
+        # current chart version
+        push:
+          - my_helm_repo
+        # (optional) override values specified at chart level for current 
+        # chart version
         values:
           # (optional) values to be passed to `--set` flag
           set:

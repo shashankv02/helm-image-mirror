@@ -39,7 +39,12 @@ charts:
         # (optional) local_dir specifies the local directory in which the
         # chart tgz exists if fetch is set to false
         local_dir:
-        # (optional) override values for version
+        # (optional) overrides push specified at chart level for the
+        # current chart version
+        push:
+          - my_helm_repo
+        # (optional) override values specified at chart level for current 
+        # chart version
         values:
           # (optional) values to be passed to `--set` flag
           set:
