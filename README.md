@@ -1,10 +1,29 @@
 ## Helm Image Mirror
 
 This tool takes a yaml formatted config file as input in which user
-can specify a list of helm repositories, helm charts and docker registries.
-The helm charts will be downloaded, all the images mentioned
-in the charts are deduced and the images are re-tagged
-and pushed to the specified docker registries.
+can specify a list of helm repositories, helm charts and docker registries 
+to copy the helm charts and the images referenced inside the charts to various
+other helm and docker registries.
+
+## Copying helm charts to other helm repositories
+
+Specify all the helm repositories including both the source and target 
+repositories under the `repos` section. 
+
+Specify the charts to be copied under `charts` section. Under the charts 
+section, a list of target helm repositories can be specified under `push` field
+to which the chart or specific chart versions should be copied. 
+
+
+## Copying images referenced in the helm chart to other docker registries
+
+Specify the helm repositories from which the charts must be downloaded under
+`repos` section.
+
+Specify the charts from which the images must be deduced under `charts` section.
+
+Specify the list of docker registries to which the images referenced in the
+charts must be copied to under `registries` section. 
 
 
 ## Sample configuration file
@@ -130,10 +149,6 @@ Create the configuration file. See [sample-config.yaml](sample-config.yaml)
 
 `helm_image_mirror -c config.yaml` (Replace config.yaml with your config file)
 
-## How to build
-
-`make build` will trigger the build and generate the docker image
-
 ## How to contribute
 
 1. Fork this repo
@@ -141,6 +156,10 @@ Create the configuration file. See [sample-config.yaml](sample-config.yaml)
 2. Make changes in the forked copy
 
 3. Submit a pull request
+
+## How to build
+
+`make build` will trigger the build and generate the docker image
 
 
 ## Debugging
