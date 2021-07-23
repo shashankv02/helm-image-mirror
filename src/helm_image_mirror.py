@@ -640,7 +640,8 @@ def push_images_to_registries(images, registries):
     :param registries: list of Regitries
     :type registries: [Registry]
     :return: dictionary containing success and failures information
-    :rtype: Dict
+        and boolean indicating if any failures have occurred
+    :rtype: Dict, bool
     """
     failures = {}
     for registry in registries:
@@ -651,7 +652,7 @@ def push_images_to_registries(images, registries):
             "Failed to push": pf,
             "Failed to cleanup": cf,
         }
-    return failures
+    return failures, tf or pf or cf
 
 
 def reconcile_charts(charts, repos):
@@ -664,6 +665,7 @@ def reconcile_charts(charts, repos):
     """
     status = {}
     repo_map = list_to_dict(repos, "name")
+    err = False
     for chart in charts:
         if not (chart.scripts or chart.push_targets):
             continue
@@ -673,6 +675,8 @@ def reconcile_charts(charts, repos):
         # Run chart scripts
         if chart.scripts:
             failed = chart.run_scripts()
+            if failed:
+                err = True
             stat["Failed scripts"] = failed
         
         # Push chart to other repositories if configured
@@ -687,6 +691,7 @@ def reconcile_charts(charts, repos):
             else:
                 msg = "Unable to pull chart. {}".format(DEBUG_HELP_MSG)
             stat["pull"] = msg
+            err = True
             continue
         else:
             stat["pull"] = "Pulled succesfully"
@@ -703,6 +708,7 @@ def reconcile_charts(charts, repos):
             try:
                 chart.push(repo_map[repo_name])
             except subprocess.CalledProcessError as exp:
+                err = True
                 if DEBUG:
                     msg = str(exp.stderr, 'utf-8')
                 else:
@@ -710,7 +716,7 @@ def reconcile_charts(charts, repos):
                 stat["push"][repo_name] = msg
             else:
                 stat["push"][repo_name] = "Pushed successfully"
-    return status
+    return status, err
     
 
 def configure_repos(repos, update=True):
@@ -751,6 +757,7 @@ def main(file):
     :param file: configuration file path
     :type file: str
     """
+    err = False
     # Parse configuration
     config = load_config(file)
     if not config:
@@ -786,8 +793,10 @@ def main(file):
             registry_config, g_retain=g_retain, g_push=g_push, parents=[REGISTRIES_KEY]
         )
         failed_to_pull = pull_images(images)
+        if failed_to_pull:
+            err = True
         pulled_images = images - failed_to_pull
-        failures = push_images_to_registries(pulled_images, registries)
+        failures, err = push_images_to_registries(pulled_images, registries)
         # Report status
         print("{:=^50}".format(" Image Status "))
         print_dict(
@@ -799,13 +808,16 @@ def main(file):
         print_dict(failures)
 
     # push charts to target helm repositories
-    chart_push_status = reconcile_charts(charts, repos)
+    chart_push_status, err = reconcile_charts(charts, repos)
     if chart_push_status:
         print("{:=^50}".format(" Chart Status "))
         print_dict(chart_push_status)
 
     if registry_config or chart_push_status:
         print("{:=^50}".format(" Status "))
+    if err:
+        return 1
+    return 0
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
