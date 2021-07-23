@@ -25,6 +25,14 @@ charts:
     # the chart should be pushed
     push:
       - my_helm_repo
+    # (optional) Any custom scripts that should be run before running
+    # any other action for this chart. The scripts would be run for 
+    # each chart version
+    scripts:
+      - custom-hook1.sh arg1 arg2
+      # When no arguments are provided repo-name, chart-name and version 
+      # are passed as positional arguments by default
+      - custom-hook2.sh
     # (optional) values to be passed to chart before rendering the templates
     # can be used for charts that have mandatorily required values
     values:

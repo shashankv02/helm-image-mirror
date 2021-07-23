@@ -9,11 +9,11 @@ docker registries
 """
 
 import argparse
+import json
 import os
 import shlex
 import subprocess
 import sys
-import pprint
 
 import yaml
 
@@ -741,7 +741,8 @@ def print_dict(failures):
     for msg, items in failures.items():
         if not items:
             del failures_copy[msg]
-    pprint.pprint(failures_copy)
+    print(json.dumps(failures, indent=4))
+
 
 
 def main(file):
