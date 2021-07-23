@@ -9,11 +9,11 @@ docker registries
 """
 
 import argparse
+import json
 import os
 import shlex
 import subprocess
 import sys
-import pprint
 
 import yaml
 
@@ -33,6 +33,7 @@ NAME_KEY = "name"
 USERNAME_KEY = "username"
 PASSWORD_KEY = "password"
 INIT_SCRIPTS_KEY = "init_scripts"
+SCRIPTS_KEY = "scripts"
 REGISTRIES_KEY = "registries"
 PUSH_KEY = "push"
 RETAIN_KEY = "retain"
@@ -58,7 +59,9 @@ class Chart:
     """Helm chart configuration"""
 
     def __init__(
-        self, repo_name, chart_name, version, local_dir, fetch_policy, values={}, push=[]
+        self, repo_name, chart_name, version, 
+        local_dir, fetch_policy, values={}, push=[],
+        scripts=[]
     ):
         self.repo_name = repo_name
         self.chart_name = chart_name
@@ -70,6 +73,7 @@ class Chart:
             self.repo_name, self.chart_name, self.version
         )
         self.push_targets = push
+        self.scripts = scripts
 
     def fetch(self):
         if self.fetch_policy:
@@ -128,6 +132,11 @@ class Chart:
         else:
             print("Found images:", images)
         return images
+    
+    def run_scripts(self):
+        print("Running scripts for chart", self.combined_name)
+        return run_scripts(
+            self.scripts, [self.repo_name, self.chart_name, self.version])
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and \
@@ -244,7 +253,7 @@ def load_config(file):
     return config
 
 
-def execute(command, print_cmd=True):
+def execute(command, print_cmd=True, split=True):
     """Executes given command in a subprocess
 
     :param command: command to execute
@@ -259,8 +268,9 @@ def execute(command, print_cmd=True):
     """
     if print_cmd:
         debug(command)
-    cmd = shlex.split(command)
-    return subprocess.run(cmd, check=True, capture_output=True).stdout
+    if split:
+        command = shlex.split(command)
+    return subprocess.run(command, check=True, capture_output=True).stdout
 
 
 def helm(command, run=True, print_cmd=True):
@@ -327,21 +337,42 @@ def parse_images(documents):
     return images
 
 
-def run_init_scripts(init_scripts):
+def run_scripts(scripts, args=[]):
     """Executes given scripts
 
     :param init_scripts: path of scripts
         to be executed
     :type init_scripts: [str]
     """
-    print("Executing initialization scripts")
-    for script in init_scripts:
-        if not os.path.isfile(script):
-            print(script, "not found!")
+    failures = {}
+    for script in scripts:
+        # if the script has hardcoded arguments, those are used instead
+        # of the defaults
+        script_tokens = script.split()
+        script_path, user_args = script_tokens[0], script_tokens[1:]
+        if not os.path.isfile(script_path):
+            print(script_path, "not found!")
+            failures[script_path] = "File not found"
             continue
-        abspath = os.path.abspath(script)
-        print("Executing", abspath)
-        execute(abspath)
+        abspath = os.path.abspath(script_path)
+        args = user_args or args
+        print("Executing:", abspath, *args)
+        try:
+            subprocess.run([abspath, *args], check=True)
+        except subprocess.CalledProcessError as exp:
+            failures[script] = str(exp)
+    return failures
+
+
+def run_init_scripts(init_scripts):
+    """Executes given initialization scripts
+
+    :param init_scripts: path of scripts
+        to be executed
+    :type init_scripts: [str]
+    """
+    print("Executing initialization scripts")
+    run_scripts(init_scripts)
     print("Finished executing initialization scripts")
 
 
@@ -472,6 +503,7 @@ def get_charts(charts, global_fetch_policy):
         chart_values = chart.get(VALUES_KEY, {})
         chart_name = chart.get(NAME_KEY)
         repo_name = chart.get(REPO_KEY)
+        chart_scripts = chart.get(SCRIPTS_KEY, [])
         chart_push_targets = chart.get(PUSH_KEY, [])
         if not chart_name:
             err = get_error_type(NAME_KEY, chart_name, chart)
@@ -502,6 +534,7 @@ def get_charts(charts, global_fetch_policy):
                     fetch_policy=version_fetch_policy,
                     values=version_values,
                     push=version_push_targets,
+                    scripts=chart_scripts,
                 )
             )
     return chart_objs
@@ -621,7 +654,7 @@ def push_images_to_registries(images, registries):
     return failures
 
 
-def push_charts(charts, repos):
+def reconcile_charts(charts, repos):
     """Pushes given charts to specified target helm repositories
 
     :param charts: list of charts
@@ -632,10 +665,19 @@ def push_charts(charts, repos):
     status = {}
     repo_map = list_to_dict(repos, "name")
     for chart in charts:
-        if not chart.push_targets:
+        if not (chart.scripts or chart.push_targets):
             continue
+
         status[chart.combined_name] = {}
         stat = status[chart.combined_name]
+        # Run chart scripts
+        if chart.scripts:
+            failed = chart.run_scripts()
+            stat["Failed scripts"] = failed
+        
+        # Push chart to other repositories if configured
+        if not chart.push_targets:
+            continue
         # Pull the chart
         try:
             chart.pull()
@@ -699,7 +741,8 @@ def print_dict(failures):
     for msg, items in failures.items():
         if not items:
             del failures_copy[msg]
-    pprint.pprint(failures_copy)
+    print(json.dumps(failures, indent=4))
+
 
 
 def main(file):
@@ -718,9 +761,11 @@ def main(file):
     run_init_scripts(init_scripts)
 
     # Configure repos
-    repos_config = config[REPOS_KEY]
-    repos = get_repos(repos_config, parents=[REPOS_KEY])
-    configure_repos(repos)
+    repos_config = config.get(REPOS_KEY, {})
+    repos = {}
+    if repos_config: 
+        repos = get_repos(repos_config, parents=[REPOS_KEY])
+        configure_repos(repos)
 
     # fetch charts
     charts = config.get(CHARTS_KEY)
@@ -731,9 +776,9 @@ def main(file):
     charts = get_charts(charts, global_fetch_policy=global_fetch_policy)
 
     # Retag and push images
-    print("Retagging and pushing images to destinations")
     registry_config = config.get(REGISTRIES_KEY, [])
     if registry_config:
+        print("Retagging and pushing images to destinations")
         images = get_all_images(charts)
         g_retain = config.get(RETAIN_KEY, False)
         g_push = config.get(PUSH_KEY, True)
@@ -752,13 +797,15 @@ def main(file):
             }
         )
         print_dict(failures)
-        
+
     # push charts to target helm repositories
-    chart_push_status = push_charts(charts, repos)
+    chart_push_status = reconcile_charts(charts, repos)
     if chart_push_status:
         print("{:=^50}".format(" Chart Status "))
         print_dict(chart_push_status)
-    print("{:=^50}".format(" Status "))
+
+    if registry_config or chart_push_status:
+        print("{:=^50}".format(" Status "))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
