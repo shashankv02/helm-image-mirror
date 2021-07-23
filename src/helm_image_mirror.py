@@ -730,36 +730,35 @@ def main(file):
     global_fetch_policy = config.get(FETCH_KEY, True)
     charts = get_charts(charts, global_fetch_policy=global_fetch_policy)
 
+    # Retag and push images
+    print("Retagging and pushing images to destinations")
+    registry_config = config.get(REGISTRIES_KEY, [])
+    if registry_config:
+        images = get_all_images(charts)
+        g_retain = config.get(RETAIN_KEY, False)
+        g_push = config.get(PUSH_KEY, True)
+        registries = get_registries(
+            registry_config, g_retain=g_retain, g_push=g_push, parents=[REGISTRIES_KEY]
+        )
+        failed_to_pull = pull_images(images)
+        pulled_images = images - failed_to_pull
+        failures = push_images_to_registries(pulled_images, registries)
+        # Report status
+        print("{:=^50}".format(" Image Status "))
+        print_dict(
+            {
+                "All images": images,
+                "Failed to pull": failed_to_pull,
+            }
+        )
+        print_dict(failures)
+        
     # push charts to target helm repositories
     chart_push_status = push_charts(charts, repos)
-
-    # Retag and push images
-    images = get_all_images(charts)
-    print("Retagging and pushing images to destinations")
-    registries = config.get(REGISTRIES_KEY)
-    g_retain = config.get(RETAIN_KEY, False)
-    g_push = config.get(PUSH_KEY, True)
-    registries = get_registries(
-        registries, g_retain=g_retain, g_push=g_push, parents=[REGISTRIES_KEY]
-    )
-    failed_to_pull = pull_images(images)
-    pulled_images = images - failed_to_pull
-    failures = push_images_to_registries(pulled_images, registries)
-
-    # Report status
-    print("{:=^50}".format(" Image Status "))
-    print_dict(
-        {
-            "All images": images,
-            "Failed to pull": failed_to_pull,
-        }
-    )
-    print_dict(failures)
     if chart_push_status:
         print("{:=^50}".format(" Chart Status "))
         print_dict(chart_push_status)
     print("{:=^50}".format(" Status "))
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
