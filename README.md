@@ -100,10 +100,6 @@ registries:
     # (optional) images will not be pushed to the registry if set to false
     push: true
 
-repos:
-  - name: my-helm-repo
-    retain: false
-    push: true
 
 # init_scripts specifies any initilization scripts that must be run before starting the
 # program. This can be used to enhance the functionality that is not available natively.
