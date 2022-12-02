@@ -168,7 +168,11 @@ class Registry:
         succeeded = set()
         for image in images:
             image_name = image.split("/")[-1]
-            target_name = "{}/{}".format(self.name, image_name)
+            if self.name == "hub.docker.com":
+                # Default dockerhub domain doesn't need prefix
+                target_name = image_name
+            else:
+                target_name = "{}/{}".format(self.name, image_name)
             try:
                 docker("tag {} {}".format(image, target_name))
             except subprocess.CalledProcessError:
@@ -322,7 +326,6 @@ def parse_images(documents):
                 images.update(get_images(value))
         if isinstance(obj, dict):
             for key, value in obj.items():
-                debug("Checking key", key)
                 if key == "image" and isinstance(value, str):
                     debug("Adding image", value)
                     images.add(value)
@@ -647,10 +650,10 @@ def push_images_to_registries(images, registries):
     for registry in registries:
         pushed, tf, pf, cf = registry.tag_and_push(images)
         failures[registry.name] = {
-            "Pushed": pushed,
-            "Failed to tag": tf,
-            "Failed to push": pf,
-            "Failed to cleanup": cf,
+            "Pushed": list(pushed),
+            "Failed to tag": list(tf),
+            "Failed to push": list(pf),
+            "Failed to cleanup": list(cf),
         }
     return failures, tf or pf or cf
 
@@ -701,7 +704,7 @@ def reconcile_charts(charts, repos):
             stat["push"] = {}
             if repo_name not in repo_map:
                 stat["push"][repo_name] = (
-                    "Repository is not configured under repos section."
+                    "Repository is not configured under repos section. "
                     "Please configure it and retry."
                 )
                 continue
@@ -728,12 +731,23 @@ def configure_repos(repos, update=True):
         defaults to True
     :type update: bool, optional
     """
+    status = {}
+    err = False
     for repo in repos:
         print("Configuring helm repository", repo.name)
-        repo.add()
-    if update:
+        try:
+            repo.add()
+        except subprocess.CalledProcessError as e:
+            status[repo.name] = f"Unable to add helm repository. Please check logs."
+            err = True        
+    if repos and update:
         print("Updating helm repositories")
-        helm("repo update")
+        try:
+            helm("repo update")
+        except subprocess.CalledProcessError as e:
+            print("helm repo update failed")
+            err = True
+    return status, err
 
 
 def print_dict(failures):
@@ -747,7 +761,7 @@ def print_dict(failures):
     for msg, items in failures.items():
         if not items:
             del failures_copy[msg]
-    print(json.dumps(failures, indent=4))
+    print(json.dumps(failures_copy, indent=4))
 
 
 
@@ -772,8 +786,12 @@ def main(file):
     repos = {}
     if repos_config: 
         repos = get_repos(repos_config, parents=[REPOS_KEY])
-        configure_repos(repos)
-
+        repo_status, err = configure_repos(repos)
+    if err:
+        if repo_status:
+            print("{:=^50}".format(" Helm repository Status "))
+            print_dict(repo_status)
+        return 1
     # fetch charts
     charts = config.get(CHARTS_KEY)
     if not charts:
@@ -799,20 +817,23 @@ def main(file):
         failures, err = push_images_to_registries(pulled_images, registries)
         # Report status
         print("{:=^50}".format(" Image Status "))
+    
         print_dict(
             {
-                "All images": images,
+                "All images": list(images),
                 "Failed to pull": failed_to_pull,
+                **failures,
             }
         )
-        print_dict(failures)
 
     # push charts to target helm repositories
     chart_push_status, err = reconcile_charts(charts, repos)
+    if repo_status:
+        print("{:=^50}".format(" Helm repository Status "))
+        print_dict(repo_status)
     if chart_push_status:
         print("{:=^50}".format(" Chart Status "))
         print_dict(chart_push_status)
-
     if registry_config or chart_push_status:
         print("{:=^50}".format(" Status "))
     if err:
