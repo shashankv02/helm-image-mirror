@@ -11,6 +11,8 @@ repos:
     username:
     # (optional) override global password for this repo
     password:
+  - name: stable
+    remote: https://charts.helm.sh/stable
 
 
 # charts from which the images must be parsed

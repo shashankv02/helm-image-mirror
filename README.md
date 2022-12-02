@@ -164,7 +164,7 @@ Create the configuration file. See [sample-config.yaml](sample-config.yaml)
 ## How to build
 
 `make build` will trigger the build and generate the docker image
-
+`make run CONFIG=sample-config.yaml` will run the built version with docker
 
 ## Debugging
 
