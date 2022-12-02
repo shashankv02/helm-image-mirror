@@ -47,7 +47,9 @@ charts:
         # (optional) override fetch setting for version
         fetch: true
         # (optional) local_dir specifies the local directory in which the
-        # chart tgz exists if fetch is set to false
+        # chart tgz exists if fetch is set to false. It can also be
+        # used to save the chart tgz file to desired local directory instead
+        # of the default $PWD/tmp path.
         local_dir:
         # (optional) overrides push specified at chart level for the
         # current chart version
